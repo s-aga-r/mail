@@ -13,7 +13,9 @@ from mail.utils.email_parser import EmailParser, extract_ip_and_host
 from mail.mail.doctype.mail_contact.mail_contact import create_mail_contact
 from mail.mail.doctype.outgoing_mail.outgoing_mail import create_outgoing_mail
 from frappe.utils import now, cint, time_diff_in_seconds, validate_email_address
-from mail.mail.doctype.spam_check_log.spam_check_log import create_spam_check_log
+from mail_server.mail_server.doctype.spam_check_log.spam_check_log import (
+	create_spam_check_log,
+)
 from mail.utils import (
 	enqueue_job,
 	parse_iso_datetime,

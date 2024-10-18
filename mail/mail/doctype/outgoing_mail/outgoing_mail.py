@@ -16,7 +16,9 @@ from mail.utils.cache import get_postmaster
 from email.utils import parseaddr, formataddr
 from email.mime.multipart import MIMEMultipart
 from frappe.utils import flt, now, cint, time_diff_in_seconds
-from mail.mail.doctype.spam_check_log.spam_check_log import create_spam_check_log
+from mail_server.mail_server.doctype.spam_check_log.spam_check_log import (
+	create_spam_check_log,
+)
 from mail.utils.user import is_mailbox_owner, is_system_manager, get_user_mailboxes
 from mail.utils import (
 	enqueue_job,
