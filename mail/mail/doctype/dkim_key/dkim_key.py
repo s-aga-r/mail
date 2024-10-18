@@ -6,7 +6,9 @@ from frappe.utils import cint
 from frappe import _, generate_hash
 from frappe.model.document import Document
 from frappe.utils.caching import request_cache
-from mail.mail.doctype.dns_record.dns_record import create_or_update_dns_record
+from mail_server.mail_server.doctype.dns_record.dns_record import (
+	create_or_update_dns_record,
+)
 
 
 class DKIMKey(Document):
