@@ -149,7 +149,6 @@ website_redirects = [
 # Permissions evaluated in scripted ways
 
 permission_query_conditions = {
-	"User": "mail.overrides.get_user_permission_query_condition",
 	"Mailbox": "mail.mail.doctype.mailbox.mailbox.get_permission_query_condition",
 	"Mail Alias": "mail.mail.doctype.mail_alias.mail_alias.get_permission_query_condition",
 	"Mail Domain": "mail.mail.doctype.mail_domain.mail_domain.get_permission_query_condition",
@@ -159,7 +158,6 @@ permission_query_conditions = {
 }
 
 has_permission = {
-	"User": "mail.overrides.user_has_permission",
 	"Mailbox": "mail.mail.doctype.mailbox.mailbox.has_permission",
 	"Mail Alias": "mail.mail.doctype.mail_alias.mail_alias.has_permission",
 	"Mail Domain": "mail.mail.doctype.mail_domain.mail_domain.has_permission",
@@ -303,7 +301,7 @@ ignore_links_on_delete = ["Mail Domain", "Incoming Mail", "Outgoing Mail"]
 fixtures = [
 	{
 		"dt": "Role",
-		"filters": [["role_name", "in", ["Postmaster", "Mailbox User", "Domain Owner"]]],
+		"filters": [["role_name", "in", ["Postmaster", "Mailbox User"]]],
 	},
 	{
 		"dt": "Custom DocPerm",

@@ -9,10 +9,7 @@
   "enabled",
   "is_verified",
   "is_subdomain",
-  "is_root_domain",
   "column_break_lr3y",
-  "domain_owner",
-  "dkim_key_size",
   "newsletter_retention",
   "dns_records_section",
   "dns_records"
@@ -26,17 +23,6 @@
    "reqd": 1,
    "set_only_once": 1,
    "unique": 1
-  },
-  {
-   "fieldname": "domain_owner",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Domain Owner",
-   "no_copy": 1,
-   "options": "User",
-   "permlevel": 1,
-   "reqd": 1
   },
   {
    "fieldname": "column_break_lr3y",
@@ -76,16 +62,6 @@
   },
   {
    "default": "0",
-   "depends_on": "eval: doc.is_root_domain",
-   "fieldname": "is_root_domain",
-   "fieldtype": "Check",
-   "label": "Root Domain",
-   "no_copy": 1,
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "default": "0",
    "depends_on": "eval: !doc.__islocal",
    "fieldname": "is_subdomain",
    "fieldtype": "Check",
@@ -93,13 +69,6 @@
    "no_copy": 1,
    "read_only": 1,
    "search_index": 1
-  },
-  {
-   "fieldname": "dkim_key_size",
-   "fieldtype": "Select",
-   "label": "DKIM Key Size (Bits)",
-   "non_negative": 1,
-   "options": "\n1024\n2048\n4096"
   },
   {
    "fieldname": "newsletter_retention",
@@ -131,7 +100,7 @@
    "link_fieldname": "domain_name"
   }
  ],
- "modified": "2024-10-08 11:52:46.083194",
+ "modified": "2024-10-19 16:39:02.963116",
  "modified_by": "Administrator",
  "module": "Mail",
  "name": "Mail Domain",
@@ -147,30 +116,6 @@
    "report": 1,
    "role": "System Manager",
    "write": 1
-  },
-  {
-   "role": "Mailbox User",
-   "select": 1
-  },
-  {
-   "create": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Domain Owner",
-   "write": 1
-  },
-  {
-   "permlevel": 1,
-   "read": 1,
-   "role": "System Manager",
-   "write": 1
-  },
-  {
-   "permlevel": 1,
-   "read": 1,
-   "role": "Domain Owner"
   }
  ],
  "sort_field": "modified",

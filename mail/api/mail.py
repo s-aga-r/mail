@@ -28,8 +28,6 @@ def get_user_info():
 	)
 	user["roles"] = frappe.get_roles(user.name)
 	user.mail_user = "Mailbox User" in user.roles
-	user.domain_owner = "Domain Owner" in user.roles
-	user.postmaster = "Postmaster" in user.roles
 	return user
 
 

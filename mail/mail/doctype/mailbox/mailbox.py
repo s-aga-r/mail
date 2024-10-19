@@ -160,10 +160,6 @@ def get_domain(
 		.limit(page_len)
 	)
 
-	user = frappe.session.user
-	if not is_system_manager(user):
-		query = query.where(MAIL_DOMAIN.domain_owner == user)
-
 	return query.run(as_dict=False)
 
 
@@ -217,10 +213,6 @@ def get_permission_query_condition(user: str | None = None) -> str:
 		user = frappe.session.user
 
 	if not is_system_manager(user):
-		if has_role(user, "Domain Owner"):
-			if domains := ", ".join(repr(d) for d in get_user_owned_domains(user)):
-				conditions.append(f"(`tabMailbox`.`domain_name` IN ({domains}))")
-
 		if has_role(user, "Mailbox User"):
 			conditions.append(f"(`tabMailbox`.`user` = {frappe.db.escape(user)})")
 

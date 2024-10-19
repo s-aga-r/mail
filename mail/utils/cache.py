@@ -79,9 +79,7 @@ def get_user_owned_domains(user: str) -> list:
 	def getter() -> list:
 		MAIL_DOMAIN = frappe.qb.DocType("Mail Domain")
 		return (
-			frappe.qb.from_(MAIL_DOMAIN)
-			.select("name")
-			.where((MAIL_DOMAIN.enabled == 1) & (MAIL_DOMAIN.domain_owner == user))
+			frappe.qb.from_(MAIL_DOMAIN).select("name").where((MAIL_DOMAIN.enabled == 1))
 		).run(pluck="name")
 
 	return _hget_or_hset(f"user|{user}", "owned_domains", getter)

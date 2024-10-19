@@ -31,11 +31,7 @@ def get_outgoing_mails(
 
 	if not is_system_manager(user):
 		conditions = []
-		domains = get_user_owned_domains(user)
 		mailboxes = get_user_mailboxes(user)
-
-		if has_role(user, "Domain Owner") and domains:
-			conditions.append(OM.domain_name.isin(domains))
 
 		if has_role(user, "Mailbox User") and mailboxes:
 			conditions.append(OM.sender.isin(mailboxes))

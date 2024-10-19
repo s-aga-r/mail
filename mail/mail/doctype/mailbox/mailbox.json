@@ -182,7 +182,7 @@
    "link_fieldname": "sender"
   }
  ],
- "modified": "2024-08-21 16:24:31.264835",
+ "modified": "2024-10-19 16:48:48.185174",
  "modified_by": "Administrator",
  "module": "Mail",
  "name": "Mailbox",
@@ -200,16 +200,6 @@
    "write": 1
   },
   {
-   "create": 1,
-   "delete": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Domain Owner",
-   "write": 1
-  },
-  {
    "export": 1,
    "print": 1,
    "read": 1,
@@ -222,12 +212,6 @@
    "permlevel": 1,
    "read": 1,
    "role": "System Manager",
-   "write": 1
-  },
-  {
-   "permlevel": 1,
-   "read": 1,
-   "role": "Domain Owner",
    "write": 1
   }
  ],

@@ -7,7 +7,7 @@ from frappe.utils import cint
 from frappe.model.document import Document
 from mail.utils.user import has_role, is_system_manager
 from mail.mail.doctype.dkim_key.dkim_key import create_dkim_key
-from mail.utils.cache import delete_cache, get_user_domains, get_root_domain_name
+from mail.utils.cache import get_user_domains, get_root_domain_name
 from mail.mail.doctype.mailbox.mailbox import (
 	create_dmarc_mailbox,
 	create_postmaster_mailbox,
@@ -36,9 +36,6 @@ class MailDomain(Document):
 			create_postmaster_mailbox(self.domain_name)
 
 		create_dmarc_mailbox(self.domain_name)
-
-	def on_update(self) -> None:
-		delete_cache(f"user|{self.domain_owner}")
 
 	def validate_dkim_key_size(self) -> None:
 		"""Validates the DKIM Key Size."""
@@ -201,7 +198,7 @@ def has_permission(doc: "Document", ptype: str, user: str) -> bool:
 	if doc.doctype != "Mail Domain":
 		return False
 
-	return is_system_manager(user) or (user == doc.domain_owner)
+	return is_system_manager(user)
 
 
 def get_permission_query_condition(user: str | None = None) -> str:
@@ -211,9 +208,6 @@ def get_permission_query_condition(user: str | None = None) -> str:
 		user = frappe.session.user
 
 	if not is_system_manager(user):
-		if has_role(user, "Domain Owner"):
-			conditions.append(f"(`tabMail Domain`.`domain_owner` = {frappe.db.escape(user)})")
-
 		if has_role(user, "Mailbox User"):
 			if domains := ", ".join(repr(d) for d in get_user_domains(user)):
 				conditions.append(f"(`tabMail Domain`.`domain_name` IN ({domains}))")
