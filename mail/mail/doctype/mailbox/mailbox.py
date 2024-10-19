@@ -97,15 +97,6 @@ def create_postmaster_mailbox(domain_name: str) -> "Mailbox":
 	return postmaster
 
 
-@frappe.whitelist()
-def create_dmarc_mailbox(domain_name: str) -> "Mailbox":
-	"""Creates a DMARC mailbox for the domain."""
-
-	dmarc_email = f"dmarc@{domain_name}"
-	frappe.flags.ingore_domain_validation = True
-	return create_mailbox(domain_name, dmarc_email, outgoing=False, display_name="DMARC")
-
-
 def create_mailbox(
 	domain_name: str,
 	user: str,

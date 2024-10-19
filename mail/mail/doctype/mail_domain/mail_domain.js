@@ -22,10 +22,6 @@ frappe.ui.form.on("Mail Domain", {
                     () => frm.trigger("refresh_dns_records")
                 )
             }, __("Actions"));
-
-            frm.add_custom_button(__("Create DMARC Mailbox"), () => {
-                frm.trigger("create_dmarc_mailbox");
-            }, __("Actions"));
         }
     },
 
@@ -62,15 +58,4 @@ frappe.ui.form.on("Mail Domain", {
             }
         });
     },
-
-    create_dmarc_mailbox(frm) {
-        frappe.call({
-			method: "mail.mail.doctype.mailbox.mailbox.create_dmarc_mailbox",
-			args: {
-				domain_name: frm.doc.domain_name,
-			},
-			freeze: true,
-			freeze_message: __("Creating DMARC Mailbox..."),
-		});
-    }
 });

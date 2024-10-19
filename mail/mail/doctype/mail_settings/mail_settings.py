@@ -4,9 +4,9 @@
 import frappe
 from frappe import _
 from frappe.utils import cint
-from mail.mail_server import MailServer
 from mail.utils.cache import delete_cache
 from frappe.model.document import Document
+from mail.mail_server import MailServerAuth
 from frappe.core.api.file import get_max_file_size
 
 
@@ -23,12 +23,12 @@ class MailSettings(Document):
 	def validate_mail_server(self) -> None:
 		"""Validates the Mail Server."""
 
-		mail_server = MailServer(
+		ms_auth = MailServerAuth(
 			self.mail_server_host,
 			self.mail_server_api_key,
 			self.get_password("mail_server_api_secret"),
 		)
-		mail_server.validate()
+		ms_auth.validate()
 
 	def validate_postmaster(self) -> None:
 		"""Validates the Postmaster."""

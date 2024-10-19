@@ -72,8 +72,35 @@ class MailServer:
 
 		return self.client.post_process(response)
 
+
+class MailServerAuth(MailServer):
+	"""Class to authenticate with the Frappe Mail Server."""
+
 	def validate(self) -> None:
 		"""Validates the API key and secret with the Frappe Mail Server."""
 
 		endpoint = "/api/method/mail_server.api.auth.validate"
 		self.request("POST", endpoint=endpoint)
+
+
+class MailServerDomain(MailServer):
+	def add_or_update_domain(self, domain_name: str) -> dict:
+		"""Adds or updates a domain in the Frappe Mail Server."""
+
+		endpoint = "/api/method/mail_server.api.domain.add_or_update_domain"
+		data = {"domain_name": domain_name}
+		return self.request("POST", endpoint=endpoint, data=data)
+
+	def get_dns_records(self, domain_name: str) -> list[dict] | None:
+		"""Returns the DNS records for a domain from the Frappe Mail Server."""
+
+		endpoint = "/api/method/mail_server.api.domain.get_dns_records"
+		params = {"domain_name": domain_name}
+		return self.request("GET", endpoint=endpoint, params=params)
+
+	def verify_dns_records(self, domain_name: str) -> list[str] | None:
+		"""Verifies the DNS records for a domain in the Frappe Mail Server."""
+
+		endpoint = "/api/method/mail_server.api.domain.verify_dns_records"
+		data = {"domain_name": domain_name}
+		return self.request("POST", endpoint=endpoint, data=data)

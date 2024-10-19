@@ -1,6 +1,5 @@
 {
  "actions": [],
- "autoname": "field:domain_name",
  "creation": "2023-12-23 15:18:36.906960",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -8,14 +7,18 @@
   "domain_name",
   "enabled",
   "is_verified",
-  "is_subdomain",
   "column_break_lr3y",
   "newsletter_retention",
   "dns_records_section",
-  "dns_records"
+  "dns_records",
+  "section_break_i51k",
+  "dkim_selector",
+  "column_break_gv06",
+  "dkim_private_key"
  ],
  "fields": [
   {
+   "depends_on": "eval: doc.__islocal",
    "fieldname": "domain_name",
    "fieldtype": "Data",
    "label": "Domain Name",
@@ -61,20 +64,34 @@
    "search_index": 1
   },
   {
-   "default": "0",
-   "depends_on": "eval: !doc.__islocal",
-   "fieldname": "is_subdomain",
-   "fieldtype": "Check",
-   "label": "Subdomain",
-   "no_copy": 1,
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
    "fieldname": "newsletter_retention",
    "fieldtype": "Int",
    "label": "Newsletter Retention (Days)",
    "non_negative": 1
+  },
+  {
+   "fieldname": "section_break_i51k",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "dkim_selector",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "DKIM Selector",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_gv06",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dkim_private_key",
+   "fieldtype": "Password",
+   "hidden": 1,
+   "label": "DKIM Private Key",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -100,11 +117,11 @@
    "link_fieldname": "domain_name"
   }
  ],
- "modified": "2024-10-19 16:39:02.963116",
+ "modified": "2024-10-20 05:58:34.727250",
  "modified_by": "Administrator",
  "module": "Mail",
  "name": "Mail Domain",
- "naming_rule": "By fieldname",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
