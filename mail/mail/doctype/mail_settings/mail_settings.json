@@ -5,7 +5,14 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "section_break_1kdf",
+  "mail_server_host",
+  "column_break_awdi",
+  "mail_server_api_key",
+  "mail_server_api_secret",
+  "section_break_uptk",
   "postmaster",
+  "column_break_xdam",
   "default_newsletter_retention",
   "outgoing_tab",
   "max_recipients",
@@ -86,7 +93,6 @@
    "reqd": 1
   },
   {
-   "depends_on": "eval: doc.root_domain_name",
    "fieldname": "postmaster",
    "fieldtype": "Link",
    "label": "Postmaster",
@@ -162,12 +168,47 @@
    "label": "Rejected Mail Retention (Days)",
    "non_negative": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "section_break_1kdf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "https://frappemail.com/",
+   "fieldname": "mail_server_host",
+   "fieldtype": "Data",
+   "label": "Mail Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mail_server_api_key",
+   "fieldtype": "Data",
+   "label": "API Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mail_server_api_secret",
+   "fieldtype": "Password",
+   "label": "API Secret",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_uptk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_xdam",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_awdi",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-10-18 19:39:40.740025",
+ "modified": "2024-10-19 15:15:42.015343",
  "modified_by": "Administrator",
  "module": "Mail",
  "name": "Mail Settings",
