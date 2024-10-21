@@ -84,6 +84,8 @@ class MailServerAuth(MailServer):
 
 
 class MailServerDomain(MailServer):
+	"""Class to manage domains in the Frappe Mail Server."""
+
 	def add_or_update_domain(self, domain_name: str) -> dict:
 		"""Adds or updates a domain in the Frappe Mail Server."""
 
@@ -104,3 +106,62 @@ class MailServerDomain(MailServer):
 		endpoint = "/api/method/mail_server.api.domain.verify_dns_records"
 		data = {"domain_name": domain_name}
 		return self.request("POST", endpoint=endpoint, data=data)
+
+
+class MailServerOutbound(MailServer):
+	"""Class to send outbound emails using the Frappe Mail Server."""
+
+	def send(self, outgoing_mail: str, recipients: list[dict], message: str) -> str:
+		"""Sends an email message to the recipients using the Frappe Mail Server."""
+
+		endpoint = "/api/method/mail_server.api.outbound.send"
+		json_data = {
+			"outgoing_mail": outgoing_mail,
+			"recipients": recipients,
+			"message": message,
+		}
+		return self.request("POST", endpoint=endpoint, json=json_data)
+
+
+def get_mail_server() -> "MailServer":
+	"""Returns a MailServer instance."""
+
+	mail_settings = frappe.get_cached_doc("Mail Settings")
+	return MailServer(
+		mail_settings.mail_server_host,
+		mail_settings.mail_server_api_key,
+		mail_settings.get_password("mail_server_api_secret"),
+	)
+
+
+def get_mail_server_auth() -> "MailServerAuth":
+	"""Returns a MailServerAuth instance."""
+
+	mail_settings = frappe.get_cached_doc("Mail Settings")
+	return MailServerAuth(
+		mail_settings.mail_server_host,
+		mail_settings.mail_server_api_key,
+		mail_settings.get_password("mail_server_api_secret"),
+	)
+
+
+def get_mail_server_domain() -> "MailServerDomain":
+	"""Returns a MailServerDomain instance."""
+
+	mail_settings = frappe.get_cached_doc("Mail Settings")
+	return MailServerDomain(
+		mail_settings.mail_server_host,
+		mail_settings.mail_server_api_key,
+		mail_settings.get_password("mail_server_api_secret"),
+	)
+
+
+def get_mail_server_outbound() -> "MailServerOutbound":
+	"""Returns a MailServerOutbound instance."""
+
+	mail_settings = frappe.get_cached_doc("Mail Settings")
+	return MailServerOutbound(
+		mail_settings.mail_server_host,
+		mail_settings.mail_server_api_key,
+		mail_settings.get_password("mail_server_api_secret"),
+	)

@@ -47,6 +47,7 @@ from mail.utils.cache import get_root_domain_name, get_user_default_mailbox
 from mail.utils.email_parser import EmailParser
 from mail.utils.user import get_user_mailboxes, is_mailbox_owner, is_system_manager
 from mail.utils.validation import validate_mailbox_for_outgoing
+from mail.mail_server import get_mail_server_outbound
 
 
 class OutgoingMail(Document):
@@ -688,18 +689,14 @@ class OutgoingMail(Document):
 			commit=True,
 		)
 
-		recipients = [formataddr((r.display_name, r.email)) for r in self.recipients]
-		data = {
-			"outgoing_mail": self.name,
-			"recipients": recipients,
-			"message": self.message,
-		}
+		recipients = [
+			{"type": rcpt.type, "email": rcpt.email, "display_name": rcpt.display_name}
+			for rcpt in self.recipients
+		]
 
 		try:
-			with rabbitmq_context() as rmq:
-				rmq.declare_queue(constants.OUTGOING_MAIL_QUEUE, max_priority=3)
-				rmq.publish(constants.OUTGOING_MAIL_QUEUE, json.dumps(data), priority=3)
-
+			ms_outbound = get_mail_server_outbound()
+			token = ms_outbound.send(self.name, recipients, self.message)
 			transfer_completed_at = now()
 			transfer_completed_after = time_diff_in_seconds(
 				transfer_completed_at, transfer_started_at
@@ -708,6 +705,7 @@ class OutgoingMail(Document):
 				status="Transferred",
 				transfer_completed_at=transfer_completed_at,
 				transfer_completed_after=transfer_completed_after,
+				token=token,
 				commit=True,
 			)
 		except Exception:

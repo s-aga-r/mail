@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from mail.mail_server import MailServerDomain
+from mail.mail_server import get_mail_server_domain
 from mail.mail.doctype.mailbox.mailbox import create_postmaster_mailbox
 
 
@@ -49,12 +49,7 @@ class MailDomain(Document):
 	def add_or_update_domain_in_mail_server(self) -> None:
 		"""Adds or Updates the Domain in the Mail Server."""
 
-		mail_settings = frappe.get_cached_doc("Mail Settings")
-		ms_domain = MailServerDomain(
-			mail_settings.mail_server_host,
-			mail_settings.mail_server_api_key,
-			mail_settings.get_password("mail_server_api_secret"),
-		)
+		ms_domain = get_mail_server_domain()
 		response = ms_domain.add_or_update_domain(self.domain_name)
 
 		for record in response["dns_records"]:
@@ -71,12 +66,7 @@ class MailDomain(Document):
 		self.is_verified = 0
 		self.dns_records.clear()
 
-		mail_settings = frappe.get_cached_doc("Mail Settings")
-		ms_domain = MailServerDomain(
-			mail_settings.mail_server_host,
-			mail_settings.mail_server_api_key,
-			mail_settings.get_password("mail_server_api_secret"),
-		)
+		ms_domain = get_mail_server_domain()
 		dns_records = ms_domain.get_dns_records(self.domain_name)
 
 		for record in dns_records:
@@ -88,12 +78,7 @@ class MailDomain(Document):
 	def verify_dns_records(self, save: bool = True) -> None:
 		"""Verifies the DNS Records."""
 
-		mail_settings = frappe.get_cached_doc("Mail Settings")
-		ms_domain = MailServerDomain(
-			mail_settings.mail_server_host,
-			mail_settings.mail_server_api_key,
-			mail_settings.get_password("mail_server_api_secret"),
-		)
+		ms_domain = get_mail_server_domain()
 		errors = ms_domain.verify_dns_records(self.domain_name)
 
 		if not errors:
