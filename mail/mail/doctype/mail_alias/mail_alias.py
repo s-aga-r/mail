@@ -7,7 +7,7 @@ from frappe.model.document import Document
 from mail.utils.user import is_system_manager
 from mail.utils.cache import get_user_owned_domains
 from mail.utils.validation import (
-	validate_active_domain,
+	validate_domain_is_enabled_and_verified,
 	is_valid_email_for_domain,
 	validate_mailbox_for_incoming,
 )
@@ -31,7 +31,7 @@ class MailAlias(Document):
 	def validate_domain(self) -> None:
 		"""Validates the domain."""
 
-		validate_active_domain(self.domain_name)
+		validate_domain_is_enabled_and_verified(self.domain_name)
 
 	def validate_mailboxes(self) -> None:
 		"""Validates the mailboxes."""

@@ -2,10 +2,6 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Mail Domain", {
-    setup(frm) {
-        frm.trigger("set_queries");
-    },
-
 	refresh(frm) {
         frm.trigger("add_actions");
 	},

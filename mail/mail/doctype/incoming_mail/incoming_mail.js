@@ -3,7 +3,6 @@
 
 frappe.ui.form.on("Incoming Mail", {
 	refresh(frm) {
-        frm.trigger("set_queries");
         frm.trigger("add_actions");
 	},
 

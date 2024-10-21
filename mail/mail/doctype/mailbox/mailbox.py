@@ -3,12 +3,13 @@
 
 import frappe
 from frappe import _
-from frappe.utils.user import add_role
+from mail.utils.cache import delete_cache
 from frappe.model.document import Document
-from frappe.query_builder import Criterion
 from mail.utils.user import has_role, is_system_manager
-from mail.utils.cache import delete_cache, get_user_owned_domains
-from mail.utils.validation import validate_active_domain, is_valid_email_for_domain
+from mail.utils.validation import (
+	validate_domain_is_enabled_and_verified,
+	is_valid_email_for_domain,
+)
 
 
 class Mailbox(Document):
@@ -17,23 +18,42 @@ class Mailbox(Document):
 		self.name = self.email
 
 	def validate(self) -> None:
-		self.validate_email()
 		self.validate_domain()
+		self.validate_user()
+		self.validate_email()
 		self.validate_display_name()
 		self.validate_default_mailbox()
 
 	def on_update(self) -> None:
 		delete_cache(f"user|{self.user}")
 
-	def validate_email(self) -> None:
-		"""Validates the email address."""
-
-		is_valid_email_for_domain(self.email, self.domain_name, raise_exception=True)
+	def on_trash(self) -> None:
+		self.validate_against_mail_alias()
+		delete_cache(f"user|{self.user}")
 
 	def validate_domain(self) -> None:
 		"""Validates the domain."""
 
-		validate_active_domain(self.domain_name)
+		validate_domain_is_enabled_and_verified(self.domain_name)
+
+	def validate_user(self) -> None:
+		"""Validates the user."""
+
+		if not self.user:
+			if self.postmaster:
+				self.user = "Administrator"
+			else:
+				frappe.throw(_("User is mandatory."))
+
+		if not has_role(self.user, "Mailbox User") and not is_system_manager(self.user):
+			frappe.throw(
+				_("User {0} does not have Mailbox User role.").format(frappe.bold(self.user))
+			)
+
+	def validate_email(self) -> None:
+		"""Validates the email address."""
+
+		is_valid_email_for_domain(self.email, self.domain_name, raise_exception=True)
 
 	def validate_display_name(self) -> None:
 		"""Validates the display name."""
@@ -44,7 +64,7 @@ class Mailbox(Document):
 	def validate_default_mailbox(self) -> None:
 		"""Validates the default mailbox."""
 
-		if not self.outgoing:
+		if not self.outgoing or self.postmaster:
 			self.is_default = 0
 			return
 
@@ -88,26 +108,34 @@ class Mailbox(Document):
 def create_postmaster_mailbox(domain_name: str) -> "Mailbox":
 	"""Creates a postmaster mailbox for the domain."""
 
-	postmaster_email = f"postmaster@{domain_name}"
+	email = f"postmaster@{domain_name}"
 	frappe.flags.ingore_domain_validation = True
 	postmaster = create_mailbox(
-		domain_name, postmaster_email, incoming=False, display_name="Postmaster"
+		domain_name,
+		email,
+		display_name="Postmaster",
+		incoming=False,
+		outgoing=True,
+		postmaster=True,
 	)
-	add_role(postmaster.user, "Postmaster")
 	return postmaster
 
 
 def create_mailbox(
 	domain_name: str,
-	user: str,
+	email: str,
+	display_name: str | None = None,
+	user: str | None = None,
 	incoming: bool = True,
 	outgoing: bool = True,
-	display_name: str | None = None,
+	postmaster: bool = False,
 ) -> "Mailbox":
 	"""Creates a user and mailbox if not exists."""
 
-	if not frappe.db.exists("Mailbox", user):
-		if not frappe.db.exists("User", user):
+	user = user or email
+
+	if not frappe.db.exists("Mailbox", email):
+		if not frappe.db.exists("User", user) and not postmaster:
 			mailbox_user = frappe.new_doc("User")
 			mailbox_user.email = user
 			mailbox_user.username = user
@@ -119,21 +147,25 @@ def create_mailbox(
 
 		mailbox = frappe.new_doc("Mailbox")
 		mailbox.domain_name = domain_name
+		mailbox.email = email
+		mailbox.display_name = display_name
+
+		if not postmaster:
+			mailbox.user = user
+
 		mailbox.incoming = incoming
 		mailbox.outgoing = outgoing
-		mailbox.user = user
-		mailbox.email = user
-		mailbox.display_name = display_name
+		mailbox.postmaster = postmaster
 		mailbox.insert(ignore_permissions=True)
 
 		return mailbox
 
-	return frappe.get_doc("Mailbox", user)
+	return frappe.get_doc("Mailbox", email)
 
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
-def get_domain(
+def get_users_with_mailbox_user_role(
 	doctype: str | None = None,
 	txt: str | None = None,
 	searchfield: str | None = None,
@@ -141,70 +173,36 @@ def get_domain(
 	page_len: int = 20,
 	filters: dict | None = None,
 ) -> list:
-	"""Returns the domains for the user."""
-
-	MAIL_DOMAIN = frappe.qb.DocType("Mail Domain")
-	query = (
-		frappe.qb.from_(MAIL_DOMAIN)
-		.select(MAIL_DOMAIN.name)
-		.where((MAIL_DOMAIN.enabled == 1) & (MAIL_DOMAIN[searchfield].like(f"%{txt}%")))
-		.limit(page_len)
-	)
-
-	return query.run(as_dict=False)
-
-
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
-def get_user(
-	doctype: str | None = None,
-	txt: str | None = None,
-	searchfield: str | None = None,
-	start: int = 0,
-	page_len: int = 20,
-	filters: dict | None = None,
-) -> list:
-	"""Returns the users."""
-
-	user = frappe.session.user
-	domains = get_user_owned_domains(user)
-
-	if not domains and not is_system_manager(user):
-		return []
+	"""Returns a list of users with Mailbox User role."""
 
 	USER = frappe.qb.DocType("User")
-	query = (
+	HAS_ROLE = frappe.qb.DocType("Has Role")
+	return (
 		frappe.qb.from_(USER)
+		.left_join(HAS_ROLE)
+		.on(USER.name == HAS_ROLE.parent)
 		.select(USER.name)
-		.where((USER.enabled == 1) & (USER[searchfield].like(f"%{txt}%")))
-		.limit(page_len)
-	)
+		.where(
+			(USER.enabled == 1)
+			& (USER.name.like(f"%{txt}%"))
+			& (HAS_ROLE.role == "Mailbox User")
+			& (HAS_ROLE.parenttype == "User")
+		)
+	).run(as_dict=False)
 
-	if domains:
-		query = query.where(Criterion.any([USER.name.like(f"%@{d}") for d in domains]))
 
-	return query.run(as_dict=False)
+def get_permission_query_condition(user: str | None = None) -> str:
+	if not user:
+		user = frappe.session.user
+
+	if is_system_manager(user):
+		return ""
+
+	return f"(`tabMailbox`.`user` = {frappe.db.escape(user)})"
 
 
 def has_permission(doc: "Document", ptype: str, user: str) -> bool:
 	if doc.doctype != "Mailbox":
 		return False
 
-	return (
-		is_system_manager(user)
-		or (user == doc.user)
-		or (doc.domain_name in get_user_owned_domains(user))
-	)
-
-
-def get_permission_query_condition(user: str | None = None) -> str:
-	conditions = []
-
-	if not user:
-		user = frappe.session.user
-
-	if not is_system_manager(user):
-		if has_role(user, "Mailbox User"):
-			conditions.append(f"(`tabMailbox`.`user` = {frappe.db.escape(user)})")
-
-	return " OR ".join(conditions)
+	return (user == doc.user) or is_system_manager(user)

@@ -12,11 +12,18 @@ frappe.ui.form.on("Mailbox", {
 
 	set_queries(frm) {
 		frm.set_query("domain_name", () => ({
-            query: "mail.mail.doctype.mailbox.mailbox.get_domain",
+            filters: {
+                "enabled": 1,
+                "is_verified": 1,
+            }
         }));
 
 		frm.set_query("user", () => ({
-            query: "mail.mail.doctype.mailbox.mailbox.get_user",
+            query: "mail.mail.doctype.mailbox.mailbox.get_users_with_mailbox_user_role",
+            filters: {
+				enabled: 1,
+				role: "Mailbox User",
+			},
         }));
     },
 

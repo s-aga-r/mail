@@ -61,7 +61,7 @@ def is_valid_email_for_domain(
 
 
 @request_cache
-def validate_active_domain(domain_name: str) -> None:
+def validate_domain_is_enabled_and_verified(domain_name: str) -> None:
 	"""Validates if the domain is enabled and verified."""
 
 	if frappe.session.user == "Administrator" or frappe.flags.ingore_domain_validation:
