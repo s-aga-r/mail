@@ -150,7 +150,6 @@ website_redirects = [
 
 permission_query_conditions = {
 	"Mailbox": "mail.mail.doctype.mailbox.mailbox.get_permission_query_condition",
-	"Mail Alias": "mail.mail.doctype.mail_alias.mail_alias.get_permission_query_condition",
 	"Mail Contact": "mail.mail.doctype.mail_contact.mail_contact.get_permission_query_condition",
 	"Outgoing Mail": "mail.mail.doctype.outgoing_mail.outgoing_mail.get_permission_query_condition",
 	"Incoming Mail": "mail.mail.doctype.incoming_mail.incoming_mail.get_permission_query_condition",
@@ -158,7 +157,6 @@ permission_query_conditions = {
 
 has_permission = {
 	"Mailbox": "mail.mail.doctype.mailbox.mailbox.has_permission",
-	"Mail Alias": "mail.mail.doctype.mail_alias.mail_alias.has_permission",
 	"Mail Contact": "mail.mail.doctype.mail_contact.mail_contact.has_permission",
 	"Outgoing Mail": "mail.mail.doctype.outgoing_mail.outgoing_mail.has_permission",
 	"Incoming Mail": "mail.mail.doctype.incoming_mail.incoming_mail.has_permission",
