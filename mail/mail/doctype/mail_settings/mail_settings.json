@@ -14,7 +14,6 @@
   "max_recipients",
   "max_headers",
   "column_break_sf4n",
-  "max_batch_size",
   "max_message_size",
   "section_break_xudp",
   "outgoing_max_attachments",
@@ -80,14 +79,6 @@
    "fieldtype": "Int",
    "label": "Max Message Size (MB)",
    "non_negative": 1,
-   "reqd": 1
-  },
-  {
-   "default": "1000",
-   "fieldname": "max_batch_size",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Max Batch Size (Count)",
    "reqd": 1
   },
   {
@@ -195,7 +186,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-10-21 15:47:55.580120",
+ "modified": "2024-10-22 17:37:30.496963",
  "modified_by": "Administrator",
  "module": "Mail",
  "name": "Mail Settings",

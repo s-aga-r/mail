@@ -156,17 +156,6 @@ def reply_to_mail(source_name, target_doc=None) -> "OutgoingMail":
 	return target_doc
 
 
-@frappe.whitelist()
-def delete_incoming_mails(mailbox: str) -> None:
-	"""Deletes the incoming mails for the given mailbox."""
-
-	if not is_system_manager(frappe.session.user):
-		frappe.throw(_("Only System Manager can delete Incoming Mails."))
-
-	if mailbox:
-		frappe.db.delete("Incoming Mail", {"receiver": mailbox})
-
-
 def delete_rejected_mails() -> None:
 	"""Called by the scheduler to delete the rejected mails based on the retention."""
 

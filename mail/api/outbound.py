@@ -126,6 +126,21 @@ def send_newsletter() -> None:
 		)
 
 
+@frappe.whitelist(methods=["POST"], allow_guest=True)
+def update_delivery_status() -> None:
+	"""Update Delivery Status."""
+
+	try:
+		data = json.loads(frappe.request.data.decode())
+		doc = frappe.get_doc("Outgoing Mail", data["outgoing_mail"])
+		doc._update_delivery_status(data, notify_update=True)
+	except Exception:
+		error_log = frappe.get_traceback(with_context=False)
+		frappe.log_error(
+			title=f"Fetch Delivery Status - {data['outgoing_mail']}", message=error_log
+		)
+
+
 def validate_batch(mails: list[dict], mandatory_fields: list[str]) -> None:
 	"""Validates the batch data."""
 

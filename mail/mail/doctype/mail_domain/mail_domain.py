@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from mail.mail_server import MailServerDomain
+from mail.mail_server import get_mail_server_domain_api
 from mail.mail.doctype.mailbox.mailbox import create_postmaster_mailbox
 
 
@@ -49,17 +49,13 @@ class MailDomain(Document):
 	def add_or_update_domain_in_mail_server(self) -> None:
 		"""Adds or Updates the Domain in the Mail Server."""
 
-		mail_settings = frappe.get_cached_doc("Mail Settings")
-		ms_domain = MailServerDomain(
-			mail_settings.mail_server_host,
-			mail_settings.mail_server_api_key,
-			mail_settings.get_password("mail_server_api_secret"),
-		)
-		response = ms_domain.add_or_update_domain(self.domain_name)
+		domain_api = get_mail_server_domain_api()
+		response = domain_api.add_or_update_domain(self.domain_name, frappe.utils.get_url())
 
 		for record in response["dns_records"]:
 			self.append("dns_records", record)
 
+		self.dkim_domain = response["dkim_domain"]
 		self.dkim_selector = response["dkim_selector"]
 		self.dkim_private_key = response["dkim_private_key"]
 
@@ -70,13 +66,8 @@ class MailDomain(Document):
 		self.is_verified = 0
 		self.dns_records.clear()
 
-		mail_settings = frappe.get_cached_doc("Mail Settings")
-		ms_domain = MailServerDomain(
-			mail_settings.mail_server_host,
-			mail_settings.mail_server_api_key,
-			mail_settings.get_password("mail_server_api_secret"),
-		)
-		dns_records = ms_domain.get_dns_records(self.domain_name)
+		domain_api = get_mail_server_domain_api()
+		dns_records = domain_api.get_dns_records(self.domain_name)
 
 		for record in dns_records:
 			self.append("dns_records", record)
@@ -87,13 +78,8 @@ class MailDomain(Document):
 	def verify_dns_records(self, save: bool = True) -> None:
 		"""Verifies the DNS Records."""
 
-		mail_settings = frappe.get_cached_doc("Mail Settings")
-		ms_domain = MailServerDomain(
-			mail_settings.mail_server_host,
-			mail_settings.mail_server_api_key,
-			mail_settings.get_password("mail_server_api_secret"),
-		)
-		errors = ms_domain.verify_dns_records(self.domain_name)
+		domain_api = get_mail_server_domain_api()
+		errors = domain_api.verify_dns_records(self.domain_name)
 
 		if not errors:
 			self.is_verified = 1

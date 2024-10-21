@@ -8,7 +8,6 @@ frappe.ui.form.on("Outgoing Mail", {
 
 	refresh(frm) {
         frm.trigger("hide_amend_button");
-        frm.trigger("add_comments");
         frm.trigger("add_actions");
         frm.trigger("set_sender");
 	},
@@ -25,15 +24,6 @@ frappe.ui.form.on("Outgoing Mail", {
 		}
 	},
 
-    add_comments(frm) {
-        if (!frm.doc.__islocal && frm.doc.status == "Blocked (Spam)") {
-            let msg = __(
-                "This email was blocked because it was flagged as spam by our system. The spam score exceeded the allowed threshold. Please review the content of your email and try removing any suspicious links or attachments, or contact support for further assistance."
-            );
-            frm.dashboard.add_comment(msg, "red", true);
-        }
-    },
-
     add_actions(frm) {
         if (frm.doc.docstatus === 1) {
             if (frm.doc.status === "Pending") {
@@ -43,25 +33,25 @@ frappe.ui.form.on("Outgoing Mail", {
             }
             else if (frm.doc.status === "Failed") {
                 frm.add_custom_button(__("Retry"), () => {
-                    frm.trigger("retry_failed_mail");
+                    frm.trigger("retry_failed");
                 }, __("Actions"));
             }
             else if (["Transferred", "Queued", "Deferred"].includes(frm.doc.status)) {
-                frm.add_custom_button(__("Get Status"), () => {
-                    frm.trigger("get_outgoing_mails_status");
+                frm.add_custom_button(__("Fetch Delivery Status"), () => {
+                    frm.trigger("fetch_and_update_delivery_statuses");
                 }, __("Actions"));
             }
             else if (frm.doc.status === "Bounced" && has_common(frappe.user_roles, ["Administrator", "System Manager"])) {
                 frm.add_custom_button(__("Retry"), () => {
-                    frm.trigger("retry_bounced_mail");
+                    frm.trigger("retry_bounced");
                 }, __("Actions"));
             }
             else if (frm.doc.status === "Sent") {
                 frm.add_custom_button(__("Reply"), () => {
-                    frm.events.reply(frm, all=false);
+                    frm.trigger("reply");
                 }, __("Actions"));
                 frm.add_custom_button(__("Reply All"), () => {
-                    frm.events.reply(frm, all=true);
+                    frm.trigger("reply_all");
                 }, __("Actions"));
             }
         }
@@ -94,10 +84,10 @@ frappe.ui.form.on("Outgoing Mail", {
         });
     },
 
-    retry_failed_mail(frm) {
+    retry_failed(frm) {
         frappe.call({
             doc: frm.doc,
-            method: "retry_failed_mail",
+            method: "retry_failed",
             freeze: true,
             freeze_message: __("Retrying..."),
             callback: (r) => {
@@ -108,24 +98,24 @@ frappe.ui.form.on("Outgoing Mail", {
         });
     },
 
-    get_outgoing_mails_status(frm) {
+    fetch_and_update_delivery_statuses(frm) {
 		frappe.call({
-			method: "mail.mail.doctype.outgoing_mail.outgoing_mail.enqueue_get_outgoing_mails_status",
+			method: "mail.mail.doctype.outgoing_mail.outgoing_mail.enqueue_fetch_and_update_delivery_statuses",
 			freeze: true,
 			freeze_message: __("Creating Job..."),
 			callback: () => {
                 frappe.show_alert({
-                    message: __("{0} job has been created.", [__("Get Status").bold()]),
+                    message: __("{0} job has been created.", [__("Fetch Delivery Statuses").bold()]),
                     indicator: "green",
                 });
             }
 		});
 	},
 
-    retry_bounced_mail(frm) {
+    retry_bounced(frm) {
         frappe.call({
             doc: frm.doc,
-            method: "retry_bounced_mail",
+            method: "retry_bounced",
             freeze: true,
             freeze_message: __("Retrying..."),
             callback: (r) => {
@@ -136,12 +126,22 @@ frappe.ui.form.on("Outgoing Mail", {
         });
     },
 
-    reply(frm, all) {
+    reply(frm) {
         frappe.model.open_mapped_doc({
 			method: "mail.mail.doctype.outgoing_mail.outgoing_mail.reply_to_mail",
 			frm: frm,
             args: {
-                all: all,
+                all: false,
+            },
+		});
+    },
+
+    reply_all(frm) {
+        frappe.model.open_mapped_doc({
+			method: "mail.mail.doctype.outgoing_mail.outgoing_mail.reply_to_mail",
+			frm: frm,
+            args: {
+                all: true,
             },
 		});
     }

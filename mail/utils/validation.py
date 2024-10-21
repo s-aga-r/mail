@@ -64,7 +64,7 @@ def is_valid_email_for_domain(
 def validate_domain_is_enabled_and_verified(domain_name: str) -> None:
 	"""Validates if the domain is enabled and verified."""
 
-	if frappe.session.user == "Administrator" or frappe.flags.ingore_domain_validation:
+	if frappe.flags.ingore_domain_validation:
 		return
 
 	enabled, is_verified = frappe.db.get_value(

@@ -209,6 +209,9 @@ def get_data(filters: dict | None = None) -> list[list]:
 
 
 def get_summary(data: list) -> list[dict]:
+	if not data:
+		return []
+
 	summary_data = {}
 	average_data = {}
 

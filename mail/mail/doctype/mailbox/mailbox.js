@@ -47,7 +47,7 @@ frappe.ui.form.on("Mailbox", {
 
     delete_incoming_mails(frm) {
         frappe.call({
-			method: "mail.mail.doctype.incoming_mail.incoming_mail.delete_incoming_mails",
+			method: "mail.mail.doctype.mailbox.mailbox.delete_incoming_mails",
 			args: {
 				mailbox: frm.doc.name,
 			},
@@ -58,7 +58,7 @@ frappe.ui.form.on("Mailbox", {
 
     delete_outgoing_mails(frm) {
         frappe.call({
-			method: "mail.mail.doctype.outgoing_mail.outgoing_mail.delete_outgoing_mails",
+			method: "mail.mail.doctype.mailbox.mailbox.delete_outgoing_mails",
 			args: {
 				mailbox: frm.doc.name,
 			},

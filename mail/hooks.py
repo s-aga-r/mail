@@ -211,9 +211,8 @@ scheduler_events = {
 			"mail.mail.doctype.outgoing_mail.outgoing_mail.enqueue_transfer_mails",
 			"mail.mail.doctype.incoming_mail.incoming_mail.enqueue_get_incoming_mails",
 		],
-		"*/2 * * * *": [
-			"mail.mail.doctype.outgoing_mail.outgoing_mail.enqueue_get_outgoing_mails_status",
-			"mail.mail.doctype.outgoing_mail.outgoing_mail.enqueue_process_newsletter_queue",
+		"*/10 * * * *": [
+			"mail.mail.doctype.outgoing_mail.outgoing_mail.enqueue_fetch_and_update_delivery_statuses",
 		],
 	},
 }
