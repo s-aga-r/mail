@@ -2,28 +2,51 @@
 # For license information, please see license.txt
 
 import json
-import frappe
-from frappe import _
-from re import finditer
+import time
 from email import policy
-from uuid_utils import uuid7
-from mail.config import constants
+from email.encoders import encode_base64
 from email.message import Message
-from email.mime.text import MIMEText
-from mail.rabbitmq import rabbitmq_context
-from frappe.model.document import Document
-from email.utils import parseaddr, formataddr
+from email.mime.audio import MIMEAudio
+from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
-from frappe.utils import flt, now, cint, time_diff_in_seconds
-from mail_server.mail_server.doctype.spam_check_log.spam_check_log import (
-	create_spam_check_log,
+from email.mime.text import MIMEText
+from email.utils import formataddr, formatdate, make_msgid, parseaddr
+from mimetypes import guess_type
+from re import finditer
+from urllib.parse import parse_qs, urlparse
+
+import frappe
+from dkim import sign as dkim_sign
+from frappe import _
+from frappe.model.document import Document, bulk_insert
+from frappe.query_builder import Interval
+from frappe.query_builder.functions import GroupConcat, Now
+from frappe.utils import (
+	flt,
+	get_datetime_str,
+	now,
+	time_diff_in_seconds,
+	validate_email_address,
 )
-from mail.utils.user import is_mailbox_owner, is_system_manager, get_user_mailboxes
+from frappe.utils.file_manager import save_file
+from uuid_utils import uuid7
+
+from mail.config import constants
+from mail.mail.doctype.mail_contact.mail_contact import create_mail_contact
+from mail.rabbitmq import rabbitmq_context
 from mail.utils import (
-	enqueue_job,
-	parse_iso_datetime,
 	convert_html_to_text,
+	enqueue_job,
+	get_in_reply_to,
+	get_in_reply_to_mail,
+	parse_iso_datetime,
+	parsedate_to_datetime,
 )
+from mail.utils.cache import get_root_domain_name, get_user_default_mailbox
+from mail.utils.email_parser import EmailParser
+from mail.utils.user import get_user_mailboxes, is_mailbox_owner, is_system_manager
+from mail.utils.validation import validate_mailbox_for_outgoing
 
 
 class OutgoingMail(Document):
@@ -52,14 +75,9 @@ class OutgoingMail(Document):
 
 			self.generate_message()
 			self.validate_max_message_size()
-			self.spam_check()
 
 	def on_submit(self) -> None:
 		self.create_mail_contacts()
-
-		if self.status == "Blocked (Spam)":
-			return
-
 		self._db_set(status="Pending", notify_update=True)
 
 		if self.via_api and not self.is_newsletter and self.submitted_after <= 5:
@@ -131,8 +149,6 @@ class OutgoingMail(Document):
 				)
 			)
 
-		from mail.utils.validation import validate_mailbox_for_outgoing
-
 		validate_mailbox_for_outgoing(self.sender)
 
 	def validate_in_reply_to(self) -> None:
@@ -151,8 +167,6 @@ class OutgoingMail(Document):
 					frappe.bold("In Reply To Mail Type")
 				)
 			)
-
-		from mail.utils import get_in_reply_to
 
 		self.in_reply_to = get_in_reply_to(
 			self.in_reply_to_mail_type, self.in_reply_to_mail_name
@@ -174,8 +188,6 @@ class OutgoingMail(Document):
 					frappe.bold(len(self.recipients)), frappe.bold(max_recipients)
 				)
 			)
-
-		from frappe.utils import validate_email_address
 
 		recipients = []
 		for recipient in self.recipients:
@@ -291,8 +303,6 @@ class OutgoingMail(Document):
 	def set_message_id(self) -> None:
 		"""Sets the Message ID."""
 
-		from email.utils import make_msgid
-
 		self.message_id = make_msgid(domain=self.domain_name)
 
 	def set_body_html(self) -> None:
@@ -315,9 +325,6 @@ class OutgoingMail(Document):
 			"""Returns the MIME message."""
 
 			if self.raw_message:
-				from mail.utils import get_in_reply_to_mail
-				from mail.utils.email_parser import EmailParser
-
 				parser = EmailParser(self.raw_message)
 
 				if parser.get_date() > now():
@@ -345,8 +352,6 @@ class OutgoingMail(Document):
 				self.body_html, self.body_plain = parser.get_body()
 
 				return parser.message
-
-			from email.utils import formatdate
 
 			message = MIMEMultipart("alternative", policy=policy.SMTP)
 
@@ -391,12 +396,6 @@ class OutgoingMail(Document):
 		def _add_attachments(message: MIMEMultipart | Message) -> None:
 			"""Adds the attachments to the message."""
 
-			from mimetypes import guess_type
-			from email.mime.base import MIMEBase
-			from email.mime.audio import MIMEAudio
-			from email.mime.image import MIMEImage
-			from email.encoders import encode_base64
-
 			for attachment in self.attachments:
 				file = frappe.get_doc("File", attachment.get("name"))
 				content_type = guess_type(file.file_name)[0]
@@ -433,10 +432,6 @@ class OutgoingMail(Document):
 		def _add_dkim_signature(message: MIMEMultipart | Message) -> None:
 			"""Adds the DKIM signature to the message."""
 
-			from dkim import sign as dkim_sign
-			from mail.utils.cache import get_root_domain_name
-			from mail.mail.doctype.dkim_key.dkim_key import get_dkim_selector_and_private_key
-
 			include_headers = [
 				b"To",
 				b"Cc",
@@ -447,19 +442,20 @@ class OutgoingMail(Document):
 				b"Message-ID",
 				b"In-Reply-To",
 			]
-			dkim_selector, dkim_private_key = get_dkim_selector_and_private_key(self.domain_name)
+			(
+				dkim_domain,
+				dkim_selector,
+				dkim_private_key,
+			) = self.get_dkim_domain_selector_and_private_key()
 			dkim_signature = dkim_sign(
 				message=message.as_string().split("\n", 1)[-1].encode("utf-8"),
-				domain=get_root_domain_name().encode(),
+				domain=dkim_domain.encode(),
 				selector=dkim_selector.encode(),
 				privkey=dkim_private_key.encode(),
 				include_headers=include_headers,
 			)
 			dkim_header = dkim_signature.decode().replace("\n", "").replace("\r", "")
 			message["DKIM-Signature"] = dkim_header[len("DKIM-Signature: ") :]
-
-		from frappe.utils import get_datetime_str
-		from mail.utils import parsedate_to_datetime
 
 		message = _get_message()
 		_add_headers(message)
@@ -485,27 +481,8 @@ class OutgoingMail(Document):
 				)
 			)
 
-	def spam_check(self) -> None:
-		"""Checks if the mail is spam."""
-
-		# Skip spam check for bulk emails as it may slow down the insertion
-		if frappe.flags.bulk_insert:
-			return
-
-		mail_settings = self.runtime.mail_settings
-		if mail_settings.enable_spam_detection and mail_settings.scan_outgoing_mail:
-			spam_log = create_spam_check_log(self.message)
-			self.spam_score = spam_log.spam_score
-			self.spam_check_response = spam_log.spamd_response
-			self.is_spam = cint(self.spam_score > mail_settings.max_spam_score_for_outbound)
-
-			if self.is_spam and mail_settings.block_spam_outgoing_mail:
-				self.status = "Blocked (Spam)"
-
 	def create_mail_contacts(self) -> None:
 		"""Creates the mail contacts."""
-
-		from mail.mail.doctype.mail_contact.mail_contact import create_mail_contact
 
 		if self.runtime.mailbox.create_mail_contact:
 			for recipient in self.recipients:
@@ -574,8 +551,6 @@ class OutgoingMail(Document):
 	def _add_attachment(self, attachment: dict | list[dict]) -> None:
 		"""Adds the attachments."""
 
-		from frappe.utils.file_manager import save_file
-
 		if attachment:
 			attachments = [attachment] if isinstance(attachment, dict) else attachment
 			for a in attachments:
@@ -623,8 +598,6 @@ class OutgoingMail(Document):
 		self, file_url: str, set_as_inline: bool = False
 	) -> str | None:
 		"""Returns the attachment content ID."""
-
-		from urllib.parse import urlparse, parse_qs
 
 		if file_url:
 			field = "file_url"
@@ -741,6 +714,14 @@ class OutgoingMail(Document):
 			error_log = frappe.get_traceback(with_context=False)
 			self._db_set(status="Failed", error_log=error_log, commit=True)
 
+	def get_dkim_domain_selector_and_private_key(self) -> tuple[str, str, str]:
+		"""Returns the DKIM domain, selector, and private key."""
+
+		dkim_domain = self.runtime.mail_domain.dkim_domain
+		dkim_selector = self.runtime.mail_domain.dkim_selector
+		dkim_private_key = self.runtime.mail_domain.get_password("dkim_private_key")
+		return dkim_domain, dkim_selector, dkim_private_key
+
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
@@ -766,7 +747,6 @@ def get_sender(
 			& (DOMAIN.is_verified == 1)
 			& (MAILBOX.enabled == 1)
 			& (MAILBOX.outgoing == 1)
-			& (MAILBOX.status == "Active")
 			& (MAILBOX[searchfield].like(f"%{txt}%"))
 		)
 		.offset(start)
@@ -792,7 +772,6 @@ def get_default_sender() -> str | None:
 			"enabled": 1,
 			"is_default": 1,
 			"outgoing": 1,
-			"status": "Active",
 		},
 		"name",
 	)
@@ -880,8 +859,6 @@ def create_outgoing_mail(
 	if via_api and not is_newsletter:
 		user = frappe.session.user
 		if sender not in get_user_mailboxes(user, "Outgoing"):
-			from mail.utils.cache import get_user_default_mailbox
-
 			doc.sender = get_user_default_mailbox(user)
 
 	if not do_not_save:
@@ -932,9 +909,6 @@ def delete_outgoing_mails(mailbox: str) -> None:
 
 def delete_newsletters() -> None:
 	"""Called by the scheduler to delete the newsletters based on the retention."""
-
-	from frappe.query_builder import Interval
-	from frappe.query_builder.functions import Now
 
 	newsletter_retention_and_mail_domains_map = {}
 	for d in frappe.db.get_list(
@@ -995,8 +969,6 @@ def transfer_mails() -> None:
 	def get_mails_to_transfer(limit: int) -> list[dict]:
 		"""Returns the mails to transfer."""
 
-		from frappe.query_builder.functions import GroupConcat
-
 		OM = frappe.qb.DocType("Outgoing Mail")
 		MR = frappe.qb.DocType("Mail Recipient")
 		return (
@@ -1033,9 +1005,6 @@ def transfer_mails() -> None:
 
 		if commit:
 			frappe.db.commit()
-
-	import time
-	from mail.utils.cache import get_root_domain_name
 
 	max_failures = 3
 	total_failures = 0
@@ -1273,8 +1242,6 @@ def get_outgoing_mails_status() -> None:
 
 def process_newsletter_queue(batch_size: int = 1000) -> None:
 	"""Processes the newsletter queue."""
-
-	from frappe.model.document import bulk_insert
 
 	batch_size = min(batch_size, 1000)
 

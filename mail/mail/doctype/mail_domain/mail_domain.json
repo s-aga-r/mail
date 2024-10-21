@@ -12,6 +12,7 @@
   "dns_records_section",
   "dns_records",
   "section_break_i51k",
+  "dkim_domain",
   "dkim_selector",
   "column_break_gv06",
   "dkim_private_key"
@@ -92,6 +93,14 @@
    "label": "DKIM Private Key",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "dkim_domain",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "DKIM Domain",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -117,7 +126,7 @@
    "link_fieldname": "domain_name"
   }
  ],
- "modified": "2024-10-20 05:58:34.727250",
+ "modified": "2024-10-21 19:08:24.610085",
  "modified_by": "Administrator",
  "module": "Mail",
  "name": "Mail Domain",
