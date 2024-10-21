@@ -12,7 +12,6 @@ from email.message import Message
 from email.mime.text import MIMEText
 from mail.rabbitmq import rabbitmq_context
 from frappe.model.document import Document
-from mail.utils.cache import get_postmaster
 from email.utils import parseaddr, formataddr
 from email.mime.multipart import MIMEMultipart
 from frappe.utils import flt, now, cint, time_diff_in_seconds
@@ -1319,7 +1318,7 @@ def process_newsletter_queue(batch_size: int = 1000) -> None:
 def enqueue_transfer_mails() -> None:
 	"Called by the scheduler to enqueue the `transfer_mails` job."
 
-	frappe.session.user = get_postmaster()
+	frappe.session.user = "Administrator"
 	enqueue_job(transfer_mails, queue="long")
 
 
@@ -1327,7 +1326,7 @@ def enqueue_transfer_mails() -> None:
 def enqueue_get_outgoing_mails_status() -> None:
 	"Called by the scheduler to enqueue the `get_outgoing_mails_status` job."
 
-	frappe.session.user = get_postmaster()
+	frappe.session.user = "Administrator"
 	enqueue_job(get_outgoing_mails_status, queue="long")
 
 

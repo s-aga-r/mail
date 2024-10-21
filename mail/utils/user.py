@@ -10,14 +10,6 @@ def is_system_manager(user: str) -> bool:
 	return user == "Administrator" or has_role(user, "System Manager")
 
 
-def is_postmaster(user: str) -> bool:
-	"""Returns True if the user is Postmaster else False."""
-
-	from mail.utils.cache import get_postmaster
-
-	return user == get_postmaster()
-
-
 def get_user_mailboxes(
 	user: str, type: Literal["Incoming", "Outgoing"] | None = None
 ) -> list:

@@ -3,7 +3,6 @@
 
 frappe.ui.form.on("Mail Settings", {
     refresh(frm) {
-        frm.trigger("set_queries");
         frm.trigger("add_comments");
     },
 
@@ -14,16 +13,6 @@ frappe.ui.form.on("Mail Settings", {
             freeze: true,
             freeze_message: __("Testing RabbitMQ Connection..."),
         });
-    },
-
-    set_queries(frm) {
-        frm.set_query("postmaster", () => ({
-            query: "mail.mail.doctype.mail_settings.mail_settings.get_postmaster",
-            filters: {
-                enabled: 1,
-                role: "Postmaster",
-            },
-        }));
     },
 
     add_comments(frm) {

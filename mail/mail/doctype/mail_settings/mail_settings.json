@@ -10,10 +10,6 @@
   "column_break_awdi",
   "mail_server_api_key",
   "mail_server_api_secret",
-  "section_break_uptk",
-  "postmaster",
-  "column_break_xdam",
-  "default_newsletter_retention",
   "outgoing_tab",
   "max_recipients",
   "max_headers",
@@ -26,6 +22,8 @@
   "outgoing_max_attachment_size",
   "outgoing_total_attachments_size",
   "newsletter_section",
+  "default_newsletter_retention",
+  "column_break_pcku",
   "max_newsletter_retention",
   "incoming_tab",
   "send_notification_on_reject",
@@ -93,13 +91,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "postmaster",
-   "fieldtype": "Link",
-   "label": "Postmaster",
-   "mandatory_depends_on": "eval: doc.send_notification_on_reject",
-   "options": "User"
-  },
-  {
    "fieldname": "column_break_l9fc",
    "fieldtype": "Column Break"
   },
@@ -149,7 +140,7 @@
    "fieldname": "default_newsletter_retention",
    "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Newsletter Retention (Days)",
+   "label": "Default Retention (Days)",
    "non_negative": 1,
    "reqd": 1
   },
@@ -193,22 +184,18 @@
    "reqd": 1
   },
   {
-   "fieldname": "section_break_uptk",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_xdam",
+   "fieldname": "column_break_awdi",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "column_break_awdi",
+   "fieldname": "column_break_pcku",
    "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-10-19 15:15:42.015343",
+ "modified": "2024-10-21 15:47:55.580120",
  "modified_by": "Administrator",
  "module": "Mail",
  "name": "Mail Settings",

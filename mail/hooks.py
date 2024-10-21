@@ -297,6 +297,6 @@ ignore_links_on_delete = ["Mail Domain", "Incoming Mail", "Outgoing Mail"]
 fixtures = [
 	{
 		"dt": "Role",
-		"filters": [["role_name", "in", ["Postmaster", "Mailbox User"]]],
+		"filters": [["role_name", "in", ["Mailbox User"]]],
 	},
 ]

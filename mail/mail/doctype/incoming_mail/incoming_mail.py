@@ -7,8 +7,8 @@ from uuid_utils import uuid7
 from typing import TYPE_CHECKING
 from email.utils import parseaddr
 from frappe.model.document import Document
-from mail.utils.cache import get_postmaster
 from mail.rabbitmq import rabbitmq_context
+from mail.utils.cache import get_postmaster_for_domain
 from mail.utils.email_parser import EmailParser, extract_ip_and_host
 from mail.mail.doctype.mail_contact.mail_contact import create_mail_contact
 from mail.mail.doctype.outgoing_mail.outgoing_mail import create_outgoing_mail
@@ -22,7 +22,6 @@ from mail.utils import (
 	get_in_reply_to_mail,
 )
 from mail.utils.user import (
-	is_postmaster,
 	is_mailbox_owner,
 	is_system_manager,
 	get_user_mailboxes,
@@ -194,7 +193,7 @@ def has_permission(doc: "Document", ptype: str, user: str) -> bool:
 		return False
 
 	user_is_mailbox_user = is_mailbox_owner(doc.receiver, user)
-	user_is_system_manager = is_postmaster(user) or is_system_manager(user)
+	user_is_system_manager = is_system_manager(user)
 
 	if ptype in ["create", "submit"]:
 		return user_is_system_manager
@@ -326,7 +325,7 @@ def get_incoming_mails() -> None:
 		domain_name = receiver.split("@")[1]
 
 		if not is_active_domain(domain_name):
-			log_rejected_mail(agent, receiver, message)
+			log_rejected_mail(agent, domain_name, receiver, message)
 			return
 
 		if is_mail_alias(receiver):
@@ -340,9 +339,11 @@ def get_incoming_mails() -> None:
 			return
 
 		# If not accepted by alias or mailbox, reject the email
-		log_rejected_mail(agent, receiver, message)
+		log_rejected_mail(agent, domain_name, receiver, message)
 
-	def log_rejected_mail(agent: str, receiver: str, message: str) -> None:
+	def log_rejected_mail(
+		agent: str, domain_name: str, receiver: str, message: str
+	) -> None:
 		"""Logs the rejected mail."""
 
 		incoming_mail = create_incoming_mail(
@@ -358,7 +359,7 @@ def get_incoming_mails() -> None:
 		):
 			try:
 				create_outgoing_mail(
-					sender=get_postmaster(),
+					sender=get_postmaster_for_domain(domain_name),
 					to=incoming_mail.reply_to or incoming_mail.sender,
 					display_name="Mail Delivery System",
 					subject=f"Undeliverable: {incoming_mail.subject}",
@@ -372,7 +373,7 @@ def get_incoming_mails() -> None:
 
 	from mail.config.constants import INCOMING_MAIL_QUEUE
 
-	frappe.session.user = get_postmaster()
+	frappe.session.user = "Administrator"
 
 	try:
 		with rabbitmq_context() as rmq:
@@ -401,5 +402,5 @@ def get_incoming_mails() -> None:
 def enqueue_get_incoming_mails() -> None:
 	"Called by the scheduler to enqueue the `get_incoming_mails` job."
 
-	frappe.session.user = get_postmaster()
+	frappe.session.user = "Administrator"
 	enqueue_job(get_incoming_mails, queue="long")

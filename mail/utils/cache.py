@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from typing import Any
 
 
@@ -49,13 +50,28 @@ def get_root_domain_name() -> str | None:
 	return _get_or_set("root_domain_name", getter, expires_in_sec=None)
 
 
-def get_postmaster() -> str:
-	"""Returns the postmaster."""
+def get_postmaster_for_domain(domain_name: str) -> str:
+	"""Returns the postmaster for the domain."""
 
 	def getter() -> str:
-		return frappe.db.get_single_value("Mail Settings", "postmaster") or "Administrator"
+		postmaster = frappe.db.get_value(
+			"Mailbox",
+			{
+				"enabled": 1,
+				"outgoing": 1,
+				"postmaster": 1,
+				"domain_name": domain_name,
+				"user": "Administrator",
+			},
+			"name",
+		)
 
-	return _get_or_set("postmaster", getter, expires_in_sec=None)
+		if not postmaster:
+			frappe.throw(_("Postmaster not found for {0}").format(domain_name))
+
+		return postmaster
+
+	return _get_or_set(f"postmaster|{domain_name}", getter)
 
 
 def get_user_domains(user: str) -> list:
