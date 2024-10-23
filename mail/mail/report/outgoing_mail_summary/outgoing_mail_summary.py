@@ -7,7 +7,6 @@ from frappe import _
 from frappe.utils import flt
 from datetime import datetime
 from frappe.query_builder import Order, Criterion
-from mail.utils.cache import get_user_owned_domains
 from frappe.query_builder.functions import Date, IfNull
 from mail.utils.user import has_role, is_system_manager, get_user_mailboxes
 
@@ -67,12 +66,6 @@ def get_columns() -> list[dict]:
 			"width": 100,
 		},
 		{
-			"label": _("Spam Score"),
-			"fieldname": "spam_score",
-			"fieldtype": "Float",
-			"width": 110,
-		},
-		{
 			"label": _("Response Message"),
 			"fieldname": "response",
 			"fieldtype": "Code",
@@ -111,6 +104,12 @@ def get_columns() -> list[dict]:
 			"width": 200,
 		},
 		{
+			"label": _("Subject"),
+			"fieldname": "subject",
+			"fieldtype": "Code",
+			"width": 500,
+		},
+		{
 			"label": _("Message ID"),
 			"fieldname": "message_id",
 			"fieldtype": "Data",
@@ -137,13 +136,13 @@ def get_data(filters: dict | None = None) -> list[list]:
 			OM.message_size,
 			OM.via_api,
 			OM.is_newsletter,
-			OM.spam_score,
-			MR.details.as_("response"),
+			MR.response,
 			OM.agent,
 			OM.domain_name,
 			OM.ip_address,
 			OM.sender,
 			MR.email.as_("recipient"),
+			OM.subject,
 			OM.message_id,
 		)
 		.where((OM.docstatus == 1) & (IfNull(MR.status, "") != ""))
@@ -255,16 +254,16 @@ def get_chart(data: list) -> list[dict]:
 
 
 def get_summary(data: list) -> list[dict]:
+	if not data:
+		return []
+
 	status_count = {}
-	total_spam_score = 0
 
 	for row in data:
 		status = row["status"]
 		if status in ["Sent", "Deferred", "Bounced"]:
 			status_count.setdefault(status, 0)
 			status_count[status] += 1
-
-		total_spam_score += row["spam_score"]
 
 	return [
 		{
@@ -284,11 +283,5 @@ def get_summary(data: list) -> list[dict]:
 			"datatype": "Int",
 			"value": status_count.get("Bounced", 0),
 			"indicator": "red",
-		},
-		{
-			"label": _("Average Spam Score"),
-			"datatype": "Float",
-			"value": flt(total_spam_score / len(data), 1) if data else 0,
-			"indicator": "black",
 		},
 	]
