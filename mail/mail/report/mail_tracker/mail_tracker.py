@@ -5,7 +5,6 @@ import frappe
 from frappe import _
 from frappe.query_builder.functions import Date
 from frappe.query_builder import Order, Criterion
-from mail.utils.cache import get_user_owned_domains
 from mail.utils.user import has_role, is_system_manager, get_user_mailboxes
 
 
@@ -167,7 +166,11 @@ def get_data(filters: dict | None = None) -> list[list]:
 
 
 def get_summary(data: dict) -> list[dict]:
+	if not data:
+		return
+
 	total_open_count = 0
+
 	for row in data:
 		if row["open_count"] > 0:
 			total_open_count += 1
