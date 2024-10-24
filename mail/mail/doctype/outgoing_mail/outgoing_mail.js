@@ -41,11 +41,6 @@ frappe.ui.form.on("Outgoing Mail", {
                     frm.trigger("fetch_and_update_delivery_statuses");
                 }, __("Actions"));
             }
-            else if (frm.doc.status === "Bounced" && has_common(frappe.user_roles, ["Administrator", "System Manager"])) {
-                frm.add_custom_button(__("Retry"), () => {
-                    frm.trigger("retry_bounced");
-                }, __("Actions"));
-            }
             else if (frm.doc.status === "Sent") {
                 frm.add_custom_button(__("Reply"), () => {
                     frm.trigger("reply");
@@ -111,20 +106,6 @@ frappe.ui.form.on("Outgoing Mail", {
             }
 		});
 	},
-
-    retry_bounced(frm) {
-        frappe.call({
-            doc: frm.doc,
-            method: "retry_bounced",
-            freeze: true,
-            freeze_message: __("Retrying..."),
-            callback: (r) => {
-                if (!r.exc) {
-                    frm.refresh();
-                }
-            }
-        });
-    },
 
     reply(frm) {
         frappe.model.open_mapped_doc({
