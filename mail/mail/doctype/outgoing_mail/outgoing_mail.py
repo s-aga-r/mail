@@ -1,6 +1,7 @@
 # Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import json
 import time
 import frappe
 from frappe import _
@@ -642,6 +643,9 @@ class OutgoingMail(Document):
 
 		if self.token != data["token"]:
 			frappe.throw(_("Invalid token."))
+		elif self.docstatus != 1:
+			self.add_comment("Comment", json.dumps(data, indent=4))
+			return
 
 		from frappe.utils import get_datetime, convert_utc_to_system_timezone
 
