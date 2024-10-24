@@ -646,6 +646,9 @@ class OutgoingMail(Document):
 		elif self.docstatus != 1:
 			self.add_comment("Comment", json.dumps(data, indent=4))
 			return
+		elif self.status == data["status"] and self.status != "Deferred":
+			self.add_comment("Comment", _("Status unchanged"))
+			return
 
 		from frappe.utils import get_datetime, convert_utc_to_system_timezone
 

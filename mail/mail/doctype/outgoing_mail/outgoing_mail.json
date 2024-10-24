@@ -101,7 +101,7 @@
    "in_standard_filter": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "Draft\nPending\nFailed\nTransferred\nBlocked\nQueued\nDeferred\nBounced\nPartially Sent\nSent\nCancelled",
+   "options": "Draft\nPending\nFailed\nTransferred\nQueued\nBlocked\nDeferred\nBounced\nPartially Sent\nSent\nCancelled",
    "read_only": 1,
    "reqd": 1,
    "search_index": 1
@@ -449,7 +449,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-10-23 10:30:36.028247",
+ "modified": "2024-10-24 11:47:52.067266",
  "modified_by": "Administrator",
  "module": "Mail",
  "name": "Outgoing Mail",
