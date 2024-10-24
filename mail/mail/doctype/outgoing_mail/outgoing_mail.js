@@ -36,7 +36,7 @@ frappe.ui.form.on("Outgoing Mail", {
                     frm.trigger("retry_failed");
                 }, __("Actions"));
             }
-            else if (["Transferred", "Queued", "Deferred"].includes(frm.doc.status)) {
+            else if (["Queued", "Deferred"].includes(frm.doc.status)) {
                 frm.add_custom_button(__("Fetch Delivery Status"), () => {
                     frm.trigger("fetch_and_update_delivery_statuses");
                 }, __("Actions"));

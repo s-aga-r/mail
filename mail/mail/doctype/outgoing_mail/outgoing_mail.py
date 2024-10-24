@@ -728,9 +728,9 @@ class OutgoingMail(Document):
 			)
 			self._db_set(
 				token=token,
+				status="Queued",
 				error_log=None,
 				error_message=None,
-				status="Transferred",
 				transfer_started_at=transfer_started_at,
 				transfer_started_after=transfer_started_after,
 				transfer_completed_at=transfer_completed_at,
@@ -1013,9 +1013,9 @@ def transfer_mails() -> None:
 						mail["name"],
 						{
 							"token": token,
+							"status": "Queued",
 							"error_log": None,
 							"error_message": None,
-							"status": "Transferred",
 							"transfer_started_at": transfer_started_at,
 							"transfer_started_after": transfer_started_after,
 							"transfer_completed_at": transfer_completed_at,
@@ -1058,7 +1058,7 @@ def fetch_and_update_delivery_statuses() -> None:
 				OM.name.as_("outgoing_mail"),
 				OM.token,
 			)
-			.where((OM.docstatus == 1) & (OM.status.isin(["Transferred", "Queued", "Deferred"])))
+			.where((OM.docstatus == 1) & (OM.status.isin(["Queued", "Deferred"])))
 			.orderby(OM.submitted_at)
 			.limit(batch_size)
 		).run(as_dict=True, as_iterator=False)
