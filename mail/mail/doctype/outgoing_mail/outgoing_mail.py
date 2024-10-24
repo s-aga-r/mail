@@ -358,12 +358,15 @@ class OutgoingMail(Document):
 		def _add_headers(message: MIMEMultipart | Message) -> None:
 			"""Adds the headers to the message."""
 
-			del message["X-FM-OM"]
-			message["X-FM-OM"] = self.name
-
 			if self.custom_headers:
 				for header in self.custom_headers:
 					message.add_header(header.key, header.value)
+
+			del message["X-FM-OM"]
+			message["X-FM-OM"] = self.name
+
+			del message["X-Priority"]
+			message["X-Priority"] = str(0 if self.is_newsletter else 1)
 
 		def _add_attachments(message: MIMEMultipart | Message) -> None:
 			"""Adds the attachments to the message."""
@@ -691,13 +694,21 @@ class OutgoingMail(Document):
 			if not (self.docstatus == 1 and self.status == "Pending"):
 				return
 
+		from email import message_from_string
+
 		try:
 			transfer_started_at = now()
 			transfer_started_after = time_diff_in_seconds(transfer_started_at, self.submitted_at)
 
+			# Update X-Priority to 3 [highest]
+			message = message_from_string(self.message)
+			del message["X-Priority"]
+			message["X-Priority"] = "3"
+			message = message.as_string()
+
 			recipients = list(set([rcpt.email for rcpt in self.recipients]))
 			outbound_api = get_mail_server_outbound_api()
-			token = outbound_api.send(self.name, recipients, self.message)
+			token = outbound_api.send(self.name, recipients, message)
 
 			transfer_completed_at = now()
 			transfer_completed_after = time_diff_in_seconds(
