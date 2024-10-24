@@ -483,41 +483,6 @@ class OutgoingMail(Document):
 		dkim_private_key = self.runtime.mail_domain.get_password("dkim_private_key")
 		return dkim_domain, dkim_selector, dkim_private_key
 
-	def update_status(self, status: str | None = None, db_set: bool = True) -> None:
-		"""Updates the status based on the recipients status."""
-
-		if not status:
-			sent_count = 0
-			deferred_count = 0
-
-			for r in self.recipients:
-				if r.status == "Sent":
-					sent_count += 1
-				elif r.status == "Deferred":
-					deferred_count += 1
-
-			if sent_count == len(self.recipients):
-				status = "Sent"
-			elif sent_count > 0:
-				status = "Partially Sent"
-			elif deferred_count == len(self.recipients):
-				status = "Deferred"
-			else:
-				status = "Bounced"
-
-		self.status = status
-
-		if db_set:
-			self._db_set(status=status)
-
-		self.sync_with_frontend(status)
-
-	def sync_with_frontend(self, status) -> None:
-		"""Triggered to sync the document with the frontend."""
-
-		if self.via_api and status == "Sent":
-			frappe.publish_realtime("outgoing_mail_sent", self.as_dict(), after_commit=True)
-
 	def _add_recipient(self, type: str, recipient: str | list[str]) -> None:
 		"""Adds the recipients."""
 
@@ -642,7 +607,11 @@ class OutgoingMail(Document):
 		"""Update Delivery Status."""
 
 		if self.token != data["token"]:
-			frappe.throw(_("Invalid token."))
+			msg = _("Invalid token ({0}) for outgoing mail ({1}).").format(
+				data["token"], self.name
+			)
+			self.add_comment("Comment", msg)
+			frappe.throw(msg)
 		elif self.docstatus != 1:
 			self.add_comment("Comment", json.dumps(data, indent=4))
 			return
@@ -669,6 +638,14 @@ class OutgoingMail(Document):
 			error_message=data["error_message"],
 			notify_update=notify_update,
 		)
+
+		self._sync_with_frontend(self.status)
+
+	def _sync_with_frontend(self, status: str) -> None:
+		"""Triggered to sync the document with the frontend."""
+
+		if self.via_api and status == "Sent":
+			frappe.publish_realtime("outgoing_mail_sent", self.as_dict(), after_commit=True)
 
 	def _db_set(
 		self,
@@ -1046,22 +1023,35 @@ def transfer_mails() -> None:
 def fetch_and_update_delivery_statuses() -> None:
 	"""Fetches and updates the delivery statuses of the mails."""
 
+	from frappe.query_builder.functions import IfNull
+
 	batch_size = 250
 	max_failures = 3
 	total_failures = 0
+	ignore_mails = []
+	statuses_to_update = ["Queued", "Deferred"]
 
 	while total_failures < max_failures:
 		OM = frappe.qb.DocType("Outgoing Mail")
-		mails = (
+		query = (
 			frappe.qb.from_(OM)
 			.select(
 				OM.name.as_("outgoing_mail"),
 				OM.token,
 			)
-			.where((OM.docstatus == 1) & (OM.status.isin(["Queued", "Deferred"])))
+			.where(
+				(OM.docstatus == 1)
+				& (IfNull(OM.token, "") != "")
+				& (OM.status.isin(statuses_to_update))
+			)
 			.orderby(OM.submitted_at)
 			.limit(batch_size)
-		).run(as_dict=True, as_iterator=False)
+		)
+
+		if ignore_mails:
+			query = query.where(OM.name.notin(ignore_mails))
+
+		mails = query.run(as_dict=True, as_iterator=False)
 
 		if not mails:
 			break
@@ -1073,6 +1063,9 @@ def fetch_and_update_delivery_statuses() -> None:
 			for delivery_status in delivery_statuses:
 				doc = frappe.get_doc("Outgoing Mail", delivery_status["outgoing_mail"])
 				doc._update_delivery_status(delivery_status)
+
+				if doc.status in statuses_to_update:
+					ignore_mails.append(doc.name)
 
 		except Exception:
 			total_failures += 1
