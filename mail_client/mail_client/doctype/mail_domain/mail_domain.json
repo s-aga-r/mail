@@ -7,6 +7,7 @@
   "domain_name",
   "enabled",
   "is_verified",
+  "store_dkim_key_on_site",
   "column_break_lr3y",
   "access_token",
   "newsletter_retention",
@@ -101,6 +102,12 @@
   {
    "fieldname": "column_break_jqvh",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "store_dkim_key_on_site",
+   "fieldtype": "Check",
+   "label": "Store DKIM Key On-Site"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -126,7 +133,7 @@
    "link_fieldname": "domain_name"
   }
  ],
- "modified": "2024-11-16 15:34:25.472358",
+ "modified": "2024-12-20 10:28:28.047692",
  "modified_by": "Administrator",
  "module": "Mail Client",
  "name": "Mail Domain",
