@@ -9,10 +9,10 @@ from mail.utils.validation import is_valid_cron_expression
 
 class MailAgentStore(Document):
 	def validate(self):
-		self.validate_purge_frequency()
+		self.validate_purge_frequency_cron()
 
-	def validate_purge_frequency(self):
-		"""Validate the purge frequency"""
+	def validate_purge_frequency_cron(self):
+		"""Validate the purge frequency cron expression."""
 
-		if self.purge_frequency:
-			is_valid_cron_expression(self.purge_frequency, raise_exception=True)
+		if self.purge_frequency_cron:
+			is_valid_cron_expression(self.purge_frequency_cron, raise_exception=True)

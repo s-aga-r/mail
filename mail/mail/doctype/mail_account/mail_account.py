@@ -1,14 +1,13 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import bcrypt
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import random_string
 
 from mail.agent import create_account_on_agents, delete_account_from_agents, patch_account_on_agents
-from mail.utils import get_dmarc_address, normalize_email
+from mail.utils import get_dmarc_address, hash_password, normalize_email
 from mail.utils.cache import get_aliases_for_user, get_tenant_for_user
 from mail.utils.user import has_role, is_system_manager, is_tenant_admin
 from mail.utils.validation import (
@@ -170,9 +169,8 @@ class MailAccount(Document):
 	def generate_secret(self) -> None:
 		"""Generates secret from password"""
 
-		password = self.get_password("password").encode("utf-8")
-		salt = bcrypt.gensalt()
-		self.secret = bcrypt.hashpw(password, salt).decode()
+		password = self.get_password("password")
+		self.secret = hash_password(password)
 
 
 def _create_user_for_mail_account(

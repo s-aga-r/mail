@@ -4,8 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-
-from mail.utils.dns import get_dns_record
+from frappe.utils import random_string
 
 
 class MailAgentGroup(Document):
@@ -17,6 +16,8 @@ class MailAgentGroup(Document):
 		self.validate_enabled()
 		self.validate_agent_group()
 		self.validate_priority()
+		self.validate_admin_password()
+		self.validate_cluster_encryption_key()
 
 	def validate_enabled(self) -> None:
 		"""Validates the enabled status of the agent group."""
@@ -31,13 +32,10 @@ class MailAgentGroup(Document):
 			frappe.throw(_("Mail Agent {0} is enabled. Please disable it first.").format(frappe.bold(agent)))
 
 	def validate_agent_group(self) -> None:
-		"""Validates the agent group and fetches the IP addresses."""
+		"""Validates the agent group."""
 
 		if self.is_new() and frappe.db.exists("Mail Agent Group", self.agent_group):
 			frappe.throw(_("Mail Agent Group {0} already exists.").format(frappe.bold(self.agent_group)))
-
-		self.ipv4_addresses = "\n".join([r.address for r in get_dns_record(self.agent_group, "A") or []])
-		self.ipv6_addresses = "\n".join([r.address for r in get_dns_record(self.agent_group, "AAAA") or []])
 
 	def validate_priority(self) -> None:
 		"""Validates the priority of the agent group."""
@@ -49,3 +47,16 @@ class MailAgentGroup(Document):
 			frappe.throw(
 				_("Mail Agent Group with priority {0} already exists.").format(frappe.bold(self.priority))
 			)
+
+	def validate_admin_password(self) -> None:
+		if self.admin_password:
+			if len(self.admin_password) < 16:
+				frappe.throw(_("Password must be at least 16 characters long."))
+		else:
+			self.admin_password = random_string(length=20)
+
+	def validate_cluster_encryption_key(self) -> None:
+		"""Validates the encryption key of the agent group."""
+
+		if not self.cluster_encryption_key:
+			self.cluster_encryption_key = random_string(length=64)

@@ -1,23 +1,33 @@
 # Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import base64
 
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import random_string
 
-from mail.agent import AgentAPI, Principal
 from mail.mail.doctype.dns_record.dns_record import create_or_update_dns_record
 from mail.mail.doctype.mail_settings.mail_settings import (
 	validate_mail_settings,
 )
-from mail.utils import generate_secret
+from mail.utils import flatten_dict, hash_password
 from mail.utils.dns import get_dns_record
 
 
 class MailAgent(Document):
+	@property
+	def config(self) -> str:
+		return get_config_toml(
+			agent_group=self.agent_group,
+			server_hostname=self.agent,
+			server_max_connections=self.server_max_connections,
+			cluster_node_id=self.cluster_node_id,
+			cluster_bind_address=self.cluster_bind_address,
+			cluster_bind_port=self.cluster_bind_port,
+			cluster_advertise_address=self.cluster_advertise_address,
+			cluster_heartbeat=self.cluster_heartbeat,
+		)
+
 	def autoname(self) -> None:
 		self.agent = self.agent.lower()
 		self.name = self.agent
@@ -28,8 +38,6 @@ class MailAgent(Document):
 
 		self.validate_agent()
 		self.validate_agent_group()
-		self.validate_is_primary()
-		self.validate_api_key()
 
 	def on_update(self) -> None:
 		self.clear_cache()
@@ -62,50 +70,10 @@ class MailAgent(Document):
 		if not frappe.db.get_value("Mail Agent Group", self.agent_group, "enabled"):
 			frappe.throw(_("Mail Agent Group {0} is disabled.").format(frappe.bold(self.agent_group)))
 
-	def validate_is_primary(self) -> None:
-		"""Validates the Is Primary field."""
-
-		filters = {
-			"is_primary": 1,
-			"agent_group": self.agent_group,
-			"name": ["!=", self.name],
-		}
-
-		if self.is_primary:
-			frappe.db.set_value("Mail Agent", filters, "is_primary", 0)
-		else:
-			if not frappe.db.exists("Mail Agent", filters):
-				self.is_primary = 1
-
-	def validate_api_key(self) -> None:
-		"""Validates the API Key or Username and Password."""
-
-		if not self.api_key:
-			if not self.username or not self.password:
-				frappe.throw(_("API Key or Username and Password is required."))
-
-			self.api_key = self.__generate_api_key()
-
 	def clear_cache(self) -> None:
 		"""Clears the cache."""
 
 		frappe.cache.delete_value("primary_agents")
-
-	def __generate_api_key(self) -> str:
-		"""Generates API Key for the given agent."""
-
-		name = f"{random_string(10)}-{self.agent}".lower()
-		secret = generate_secret()
-		principal = Principal(
-			name=name, type="apiKey", secrets=secret, roles=["admin"], enabledPermissions=["authenticate"]
-		)
-		agent_api = AgentAPI(self.base_url, username=self.username, password=self.get_password("password"))
-		response = agent_api.request(method="POST", endpoint="/api/principal", json=principal.__dict__).json()
-
-		if error := response.get("error"):
-			frappe.throw(error)
-
-		return f"api_{base64.b64encode(f'{name}:{secret}'.encode()).decode()}"
 
 
 def create_or_update_spf_dns_record(spf_host: str | None = None) -> None:
@@ -132,3 +100,180 @@ def create_or_update_spf_dns_record(spf_host: str | None = None) -> None:
 	else:
 		if spf_dns_record := frappe.db.exists("DNS Record", {"host": spf_host, "type": "TXT"}):
 			frappe.delete_doc("DNS Record", spf_dns_record, ignore_permissions=True)
+
+
+def get_config_toml(
+	agent_group: str,
+	server_hostname: str,
+	server_max_connections: int,
+	cluster_node_id: int,
+	cluster_bind_address: str,
+	cluster_bind_port: int,
+	cluster_advertise_address: str,
+	cluster_heartbeat: int,
+) -> str | None:
+	"""Returns the TOML configuration for the Mail Agent."""
+
+	def get_stores(*stores) -> dict:
+		store_type_map = {
+			"RocksDB": "rocksdb",
+			"FoundationDB": "foundationdb",
+			"PostgreSQL": "postgresql",
+			"mySQL": "mysql",
+			"SQLite": "sqlite",
+			"S3-compatible": "s3",
+			"Redis/Memcached": "redis",
+			"ElasticSearch": "elasticsearch",
+			"Azure blob storage": "azure",
+			"Filesystem": "fs",
+			"SQL with Replicas": "sql-read-replica",
+			"Sharded Blob Store": "sharded-blob",
+			"Sharded In-Memory Store": "sharded-in-memory",
+		}
+		store_config = {}
+		for store in stores:
+			if store.store_id in store_config:
+				continue
+
+			store_config.setdefault(store.store_id, {})
+			match store.type:
+				case "RocksDB":
+					store_config.update(
+						{
+							store.store_id: {
+								"type": store_type_map[store.type],
+								"path": store.path,
+								"compression": store.compression,
+								"min-blob-size": store.min_blob_size_bytes,
+								"write-buffer-size": store.write_buffer_size_mb,
+								"workers": store.thread_pool_size,
+								"purge": {"frequency": store.purge_frequency_cron},
+							}
+						}
+					)
+
+		return store_config
+
+	agent_group = frappe.get_doc("Mail Agent Group", agent_group)
+	directory_store = frappe.get_doc("Mail Agent Store", agent_group.directory_store)
+	data_store = frappe.get_doc("Mail Agent Store", agent_group.data_store)
+	blob_store = frappe.get_doc("Mail Agent Store", agent_group.blob_store)
+	fts_store = frappe.get_doc("Mail Agent Store", agent_group.fts_store)
+	lookup_store = frappe.get_doc("Mail Agent Store", agent_group.memory_store)
+
+	config = {
+		"authentication": {
+			"fallback-admin": {
+				"user": agent_group.admin_username,
+				"secret": hash_password(agent_group.get_password("admin_password")),
+			}
+		},
+		"server": {
+			"hostname": server_hostname,
+			"max-connections": server_max_connections,
+			"listener": {
+				"http": {"bind": "[::]:8080", "protocol": "http"},
+				"https": {
+					"bind": "[::]:443",
+					"protocol": "http",
+					"tls": {
+						"implicit": True,
+					},
+				},
+				"imap": {"bind": "[::]:143", "protocol": "imap"},
+				"imaptls": {
+					"bind": "[::]:993",
+					"protocol": "imap",
+					"tls": {
+						"implicit": True,
+					},
+				},
+				"pop3": {"bind": "[::]:110", "protocol": "pop3"},
+				"pop3s": {
+					"bind": "[::]:995",
+					"protocol": "pop3",
+					"tls": {
+						"implicit": True,
+					},
+				},
+				"sieve": {"bind": "[::]:4190", "protocol": "managesieve"},
+				"smtp": {"bind": "[::]:25", "protocol": "smtp"},
+				"submission": {
+					"bind": "[::]:587",
+					"protocol": "smtp",
+				},
+				"submissions": {
+					"bind": "[::]:465",
+					"protocol": "smtp",
+					"tls": {
+						"implicit": True,
+					},
+				},
+			},
+			"socket": {
+				"backlog": 1024,
+				"nodelay": True,
+				"reuse-addr": True,
+				"reuse-port": True,
+			},
+		},
+		"cluster": {
+			"node-id": cluster_node_id,
+			"bind-addr": cluster_bind_address,
+			"bind-port": cluster_bind_port,
+			"advertise-addr": cluster_advertise_address,
+			"key": agent_group.get_password("cluster_encryption_key"),
+			"heartbeat": cluster_heartbeat,
+			"seed-nodes": [],
+		},
+		"directory": {
+			f"{directory_store.store_id}": {
+				"type": "internal",
+				"store": f"{directory_store.store_id}",
+				"cache": {
+					"size": 1048576,
+					"ttl": {
+						"negative": "10m",
+						"positive": "1h",
+					},
+				},
+			}
+		},
+		"storage": {
+			"directory": directory_store.store_id,
+			"data": data_store.store_id,
+			"blob": blob_store.store_id,
+			"fts": fts_store.store_id,
+			"lookup": lookup_store.store_id,
+		},
+		"store": get_stores(directory_store, data_store, blob_store, fts_store, lookup_store),
+		"tracer": {
+			"log": {
+				"type": "log",
+				"path": "/opt/stalwart-mail/logs",
+				"prefix": "stalwart.log",
+				"rotate": "daily",
+				"level": "info",
+				"ansi": False,
+				"enable": True,
+			}
+		},
+	}
+
+	toml_lines = []
+	flat_config = flatten_dict(config)
+	for key, value in flat_config.items():
+		if isinstance(value, str):
+			toml_lines.append(f'{key} = "{value}"')
+		elif isinstance(value, bool):
+			toml_lines.append(f"{key} = {str(value).lower()}")
+		else:
+			toml_lines.append(f"{key} = {value}")
+
+	return "\n".join(toml_lines)
+
+
+def on_doctype_update() -> None:
+	frappe.db.add_unique(
+		"Mail Agent", ["agent_group", "cluster_node_id"], constraint_name="unique_agent_group_cluster_node_id"
+	)

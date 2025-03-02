@@ -14,7 +14,7 @@ frappe.ui.form.on('Mail Agent Store', {
 			frm.set_value('compression', 'LZ4')
 			frm.set_value('min_blob_size_bytes', '16834')
 			frm.set_value('write_buffer_size_mb', '128')
-			frm.set_value('purge_frequency', '0 3 * * *')
+			frm.set_value('purge_frequency_cron', '0 3 * * *')
 		}
 	},
 })

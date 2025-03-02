@@ -6,23 +6,26 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_excr",
-  "enabled",
-  "is_primary",
   "enable_inbound",
   "enable_outbound",
   "column_break_0mtp",
   "agent_group",
   "agent",
-  "section_break_0gph",
-  "base_url",
-  "api_key",
-  "column_break_q7yu",
-  "username",
-  "password",
+  "network_settings_section",
+  "server_max_connections",
+  "cluster_settings_section",
+  "cluster_node_id",
+  "cluster_bind_address",
+  "cluster_bind_port",
+  "column_break_m8qz",
+  "cluster_advertise_address",
+  "cluster_heartbeat",
   "section_break_3jtz",
   "ipv4_addresses",
   "column_break_mgw4",
-  "ipv6_addresses"
+  "ipv6_addresses",
+  "section_break_vndz",
+  "config"
  ],
  "fields": [
   {
@@ -34,14 +37,6 @@
    "reqd": 1,
    "set_only_once": 1,
    "unique": 1
-  },
-  {
-   "default": "1",
-   "depends_on": "eval: !doc.__islocal",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled",
-   "search_index": 1
   },
   {
    "fieldname": "section_break_excr",
@@ -70,54 +65,24 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "1",
+   "default": "0",
+   "fetch_from": "agent_group.inbound",
    "fieldname": "enable_inbound",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Inbound",
+   "read_only": 1,
    "search_index": 1
   },
   {
-   "default": "1",
+   "default": "0",
+   "fetch_from": "agent_group.outbound",
    "fieldname": "enable_outbound",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Outbound",
+   "read_only": 1,
    "search_index": 1
-  },
-  {
-   "fieldname": "section_break_0gph",
-   "fieldtype": "Section Break"
-  },
-  {
-   "default": "admin",
-   "fieldname": "username",
-   "fieldtype": "Data",
-   "label": "Username",
-   "no_copy": 1
-  },
-  {
-   "fieldname": "password",
-   "fieldtype": "Password",
-   "label": "Password",
-   "no_copy": 1
-  },
-  {
-   "fieldname": "api_key",
-   "fieldtype": "Password",
-   "label": "API Key",
-   "no_copy": 1
-  },
-  {
-   "fieldname": "column_break_q7yu",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "base_url",
-   "fieldtype": "Data",
-   "label": "Base URL",
-   "no_copy": 1,
-   "reqd": 1
   },
   {
    "fieldname": "ipv4_addresses",
@@ -136,14 +101,73 @@
    "read_only": 1
   },
   {
-   "default": "0",
-   "fieldname": "is_primary",
-   "fieldtype": "Check",
-   "label": "Primary",
-   "no_copy": 1,
-   "search_index": 1
+   "fieldname": "config",
+   "fieldtype": "Code",
+   "is_virtual": 1,
+   "label": "Config"
+  },
+  {
+   "fieldname": "section_break_vndz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "network_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Network Settings"
+  },
+  {
+   "fieldname": "cluster_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Cluster Settings"
+  },
+  {
+   "default": "8192",
+   "fieldname": "server_max_connections",
+   "fieldtype": "Int",
+   "label": "Max Connections",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cluster_node_id",
+   "fieldtype": "Int",
+   "label": "Node ID",
+   "non_negative": 1,
+   "placeholder": "1",
+   "reqd": 1
+  },
+  {
+   "default": "[::]",
+   "fieldname": "cluster_bind_address",
+   "fieldtype": "Data",
+   "label": "Bind Address",
+   "reqd": 1
+  },
+  {
+   "default": "1179",
+   "fieldname": "cluster_bind_port",
+   "fieldtype": "Int",
+   "label": "Bind Port",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cluster_advertise_address",
+   "fieldtype": "Data",
+   "label": "Advertise Address"
+  },
+  {
+   "default": "1",
+   "fieldname": "cluster_heartbeat",
+   "fieldtype": "Int",
+   "label": "Heartbeat (Seconds)",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_m8qz",
+   "fieldtype": "Column Break"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [
   {
@@ -157,7 +181,7 @@
    "link_fieldname": "agent"
   }
  ],
- "modified": "2025-01-16 16:35:14.676980",
+ "modified": "2025-03-02 14:56:15.528585",
  "modified_by": "Administrator",
  "module": "Mail",
  "name": "Mail Agent",
@@ -175,6 +199,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

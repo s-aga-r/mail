@@ -9,10 +9,25 @@ from collections.abc import Callable
 from io import BytesIO
 from typing import Literal
 
+import bcrypt
 import frappe
 from bs4 import BeautifulSoup
 from frappe import _
 from frappe.utils.caching import redis_cache, request_cache
+
+
+def hash_password(password: str) -> str:
+	"""Generate a bcrypt hash for a given password."""
+
+	salt = bcrypt.gensalt()
+	hashed = bcrypt.hashpw(password.encode(), salt)
+	return hashed.decode()
+
+
+def verify_password(password: str, hashed_password: str) -> bool:
+	"""Verify if a password matches the stored bcrypt hash."""
+
+	return bcrypt.checkpw(password.encode(), hashed_password.encode())
 
 
 def encode_image_to_base64(image_path: str) -> str:
@@ -167,6 +182,19 @@ def normalize_email(email: str) -> str:
 	local, domain = email.split("@", 1)
 	normalized_local = re.sub(r"\.", "", local)
 	return f"{normalized_local}@{domain}"
+
+
+def flatten_dict(d, parent_key="", sep="."):
+	"""Recursively flattens a nested dictionary into dot notation."""
+
+	items = {}
+	for k, v in d.items():
+		new_key = f"{parent_key}{sep}{k}" if parent_key else k
+		if isinstance(v, dict):
+			items.update(flatten_dict(v, new_key, sep))
+		else:
+			items[new_key] = v
+	return items
 
 
 def get_dkim_host(domain_name: str, type: Literal["rsa", "ed25519"]) -> str:

@@ -4,23 +4,41 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_krzj",
+  "details_tab",
   "enabled",
   "inbound",
   "outbound",
   "column_break_fkha",
   "agent_group",
   "priority",
-  "section_break_0q8l",
-  "ipv4_addresses",
-  "column_break_79yp",
-  "ipv6_addresses"
+  "authentication_section",
+  "admin_username",
+  "admin_password",
+  "cluster_settings_section",
+  "cluster_encryption_key",
+  "section_break_r4np",
+  "directory_store_section",
+  "directory_store",
+  "data_store_section",
+  "data_store",
+  "column_break_iwwx",
+  "enable_encryption_at_rest",
+  "encrypt_on_append",
+  "blob_store_section",
+  "blob_store",
+  "section_break_dwzo",
+  "fts_store",
+  "column_break_a9m0",
+  "default_language",
+  "in_memory_store_section",
+  "memory_store",
+  "cleanup_section",
+  "frequency",
+  "column_break_ld4b",
+  "changes_history_days",
+  "trash_auto_expunge_days"
  ],
  "fields": [
-  {
-   "fieldname": "section_break_krzj",
-   "fieldtype": "Section Break"
-  },
   {
    "default": "1",
    "depends_on": "eval: !doc.__islocal",
@@ -43,14 +61,6 @@
    "mandatory_depends_on": "eval: doc.inbound",
    "no_copy": 1,
    "search_index": 1
-  },
-  {
-   "fieldname": "section_break_0q8l",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_79yp",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "agent_group",
@@ -78,22 +88,162 @@
    "search_index": 1
   },
   {
-   "fieldname": "ipv4_addresses",
-   "fieldtype": "Small Text",
-   "in_standard_filter": 1,
-   "label": "IPv4 Addresses",
-   "no_copy": 1,
-   "read_only": 1
+   "fieldname": "section_break_r4np",
+   "fieldtype": "Tab Break",
+   "label": "Storage"
   },
   {
-   "fieldname": "ipv6_addresses",
-   "fieldtype": "Small Text",
-   "in_standard_filter": 1,
-   "label": "IPv6 Addresses",
-   "no_copy": 1,
+   "fieldname": "data_store",
+   "fieldtype": "Link",
+   "label": "Store",
+   "options": "Mail Agent Store",
+   "reqd": 1
+  },
+  {
+   "fieldname": "blob_store",
+   "fieldtype": "Link",
+   "label": "Store",
+   "options": "Mail Agent Store",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fts_store",
+   "fieldtype": "Link",
+   "label": "Store",
+   "options": "Mail Agent Store",
+   "reqd": 1
+  },
+  {
+   "fieldname": "memory_store",
+   "fieldtype": "Link",
+   "label": "Store",
+   "options": "Mail Agent Store",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_encryption_at_rest",
+   "fieldtype": "Check",
+   "label": "Enable encryption at rest"
+  },
+  {
+   "default": "0",
+   "fieldname": "encrypt_on_append",
+   "fieldtype": "Check",
+   "label": "Encrypt on append"
+  },
+  {
+   "default": "en",
+   "fieldname": "default_language",
+   "fieldtype": "Data",
+   "label": "Default Language"
+  },
+  {
+   "fieldname": "data_store_section",
+   "fieldtype": "Section Break",
+   "label": "Data Store"
+  },
+  {
+   "fieldname": "blob_store_section",
+   "fieldtype": "Section Break",
+   "label": "Blob Store"
+  },
+  {
+   "fieldname": "column_break_iwwx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_a9m0",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_dwzo",
+   "fieldtype": "Section Break",
+   "label": "Full Text Index Store"
+  },
+  {
+   "fieldname": "in_memory_store_section",
+   "fieldtype": "Section Break",
+   "label": "In-Memory Store"
+  },
+  {
+   "fieldname": "cleanup_section",
+   "fieldtype": "Section Break",
+   "label": "Cleanup"
+  },
+  {
+   "default": "30",
+   "fieldname": "changes_history_days",
+   "fieldtype": "Int",
+   "label": "Changes History (Days)",
+   "non_negative": 1
+  },
+  {
+   "default": "30",
+   "fieldname": "trash_auto_expunge_days",
+   "fieldtype": "Int",
+   "label": "Trash Auto-Expunge (Days)",
+   "non_negative": 1
+  },
+  {
+   "default": "0 0 * * *",
+   "description": "<pre>*  *  *  *  *\n\u252c  \u252c  \u252c  \u252c  \u252c\n\u2502  \u2502  \u2502  \u2502  \u2502\n\u2502  \u2502  \u2502  \u2502  \u2514 day of week (0 - 6) (0 is Sunday)\n\u2502  \u2502  \u2502  \u2514\u2500\u2500\u2500\u2500\u2500 month (1 - 12)\n\u2502  \u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 day of month (1 - 31)\n\u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 hour (0 - 23)\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 minute (0 - 59)\n\n---\n\n* - Any value\n/ - Step values\n</pre>\n",
+   "fieldname": "frequency",
+   "fieldtype": "Data",
+   "label": "Frequency (Cron)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ld4b",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "authentication_section",
+   "fieldtype": "Section Break",
+   "label": "Authentication"
+  },
+  {
+   "fieldname": "directory_store_section",
+   "fieldtype": "Section Break",
+   "label": "Directory Store"
+  },
+  {
+   "fieldname": "directory_store",
+   "fieldtype": "Link",
+   "label": "Store",
+   "options": "Mail Agent Store",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cluster_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Cluster Settings"
+  },
+  {
+   "default": "frappe",
+   "fieldname": "admin_username",
+   "fieldtype": "Data",
+   "label": "Username",
+   "reqd": 1
+  },
+  {
+   "fieldname": "admin_password",
+   "fieldtype": "Password",
+   "label": "Password"
+  },
+  {
+   "fieldname": "cluster_encryption_key",
+   "fieldtype": "Password",
+   "label": "Encryption Key",
    "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [
   {
@@ -107,7 +257,7 @@
    "link_fieldname": "agent_group"
   }
  ],
- "modified": "2025-01-16 16:34:50.937551",
+ "modified": "2025-03-02 14:52:12.544518",
  "modified_by": "Administrator",
  "module": "Mail",
  "name": "Mail Agent Group",
@@ -127,6 +277,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
